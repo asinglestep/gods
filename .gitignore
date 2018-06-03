@@ -1,0 +1,9 @@
+*.profile*
+.DS_Store
+*.test
+*.out
+*.svg
+*.pdf
+*.png
+*.dot
+/practice/
