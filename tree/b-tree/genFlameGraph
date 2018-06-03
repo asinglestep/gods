@@ -1,0 +1,10 @@
+if [[ $1 == "" ]];then
+    echo "输入测试函数名"
+    exit
+fi
+
+go test -gcflags="-N -l" -bench=$1 -run=^$ -cpuprofile=cpu.out -trace=trace.out -memprofile=mem.out 
+
+go-torch b-tree.test cpu.out
+
+open -a /Applications/Safari.app torch.svg
