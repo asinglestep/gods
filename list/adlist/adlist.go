@@ -1,6 +1,9 @@
 package adlist
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/asinglestep/gods/utils"
 )
 
@@ -154,4 +157,16 @@ func (l *List) SearchNode(entry interface{}) *Node {
 	}
 
 	return nil
+}
+
+// String String
+func (l *List) String() string {
+	iter := NewIterator(l)
+
+	sArr := make([]string, 0, l.length)
+	for iter.Next() {
+		sArr = append(sArr, fmt.Sprintf("%v", iter.Entry()))
+	}
+
+	return strings.Join(sArr, " --> ")
 }

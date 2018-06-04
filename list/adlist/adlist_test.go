@@ -1,6 +1,7 @@
 package adlist
 
 import (
+	// "fmt"
 	"testing"
 )
 
@@ -35,6 +36,8 @@ func Test_Insert(t *testing.T) {
 
 	list.AddNodeToHead(1)
 	list.AddNodeToTail(8)
+
+	// fmt.Printf("%v\n", list)
 
 	var idx = 1
 	iter := NewIterator(list)
