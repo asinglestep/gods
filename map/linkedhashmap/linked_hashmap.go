@@ -4,18 +4,13 @@ import (
 	"fmt"
 
 	"github.com/asinglestep/gods/list/adlist"
+	"github.com/asinglestep/gods/utils"
 )
 
 var (
-	errEntryType = fmt.Errorf("Not a Entry type")
-	errNotExist  = fmt.Errorf("No key exist")
+	ErrEntryType = fmt.Errorf("Not a Entry type")
+	ErrNotExist  = fmt.Errorf("No key exist")
 )
-
-// Entry Entry
-type Entry struct {
-	key interface{}
-	val interface{}
-}
 
 // LinkedHashMap LinkedHashMap
 type LinkedHashMap struct {
@@ -35,8 +30,8 @@ func NewLinkedHashMap(capacity uint64) *LinkedHashMap {
 }
 
 // Put 加入或者更新节点
-func (l *LinkedHashMap) Put(entry Entry) error {
-	node, ok := l.m[entry.key]
+func (l *LinkedHashMap) Put(entry *utils.Entry) error {
+	node, ok := l.m[entry.GetKey()]
 	if ok {
 		// 节点存在，更新
 		node.SetEntry(entry)
@@ -49,30 +44,30 @@ func (l *LinkedHashMap) Put(entry Entry) error {
 		// 超过LinkHashMap容量，删除第一个节点
 		firstNode := l.list.Head()
 		entry := firstNode.GetEntry()
-		e, ok := entry.(Entry)
+		e, ok := entry.(*utils.Entry)
 		if !ok {
-			return errEntryType
+			return ErrEntryType
 		}
 
 		l.list.DeleteNode(firstNode)
-		delete(l.m, e.key)
+		delete(l.m, e.GetKey())
 	}
 
 	// 插入新节点
 	node = l.list.AddNodeToTail(entry)
-	l.m[entry.key] = node
+	l.m[entry.GetKey()] = node
 
 	return nil
 }
 
 // Get 获取key指定的数据
-func (l *LinkedHashMap) Get(key interface{}) (entry Entry, err error) {
+func (l *LinkedHashMap) Get(key interface{}) (entry *utils.Entry, err error) {
 	node, ok := l.m[key]
 	if ok {
 		// 节点存在，节点移动到链表尾部
-		e, ok := node.GetEntry().(Entry)
+		e, ok := node.GetEntry().(*utils.Entry)
 		if !ok {
-			return Entry{}, errEntryType
+			return nil, ErrEntryType
 		}
 
 		l.list.DeleteNode(node)
@@ -80,5 +75,5 @@ func (l *LinkedHashMap) Get(key interface{}) (entry Entry, err error) {
 		return e, nil
 	}
 
-	return Entry{}, errNotExist
+	return nil, ErrNotExist
 }
