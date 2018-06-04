@@ -34,12 +34,12 @@ func NewList(comparator utils.Comparator) *List {
 }
 
 // Search 查找
-func (l *List) Search(key interface{}) *Entry {
+func (l *List) Search(key interface{}) *utils.Entry {
 	x := l.head
 
 	for i := l.level - 1; i >= 0; i-- {
 		for x.level[i].forward != nil {
-			res := l.comparator.Compare(x.level[i].forward.entry.key, key)
+			res := l.comparator.Compare(x.level[i].forward.entry.GetKey(), key)
 			if res == utils.Et {
 				return x.level[i].forward.entry
 			}
@@ -70,7 +70,7 @@ func (l *List) Insert(key, val interface{}) {
 			rank[i] = rank[i+1]
 		}
 
-		for x.level[i].forward != nil && l.comparator.Compare(x.level[i].forward.entry.key, key) == utils.Lt {
+		for x.level[i].forward != nil && l.comparator.Compare(x.level[i].forward.entry.GetKey(), key) == utils.Lt {
 			rank[i] += x.level[i].span
 			x = x.level[i].forward
 		}
@@ -114,7 +114,7 @@ func (l *List) Delete(key interface{}) {
 	update := make([]*Node, MAX_LEVEL)
 
 	for i := l.level - 1; i >= 0; i-- {
-		for x.level[i].forward != nil && l.comparator.Compare(x.level[i].forward.entry.key, key) == utils.Lt {
+		for x.level[i].forward != nil && l.comparator.Compare(x.level[i].forward.entry.GetKey(), key) == utils.Lt {
 			// 当前节点的key小于要删除的key，取下一个节点
 			x = x.level[i].forward
 		}
@@ -124,7 +124,7 @@ func (l *List) Delete(key interface{}) {
 	}
 
 	dNode := x.level[0].forward
-	if l.comparator.Compare(dNode.entry.key, key) == utils.Et {
+	if l.comparator.Compare(dNode.entry.GetKey(), key) == utils.Et {
 		l.deleteNode(update, dNode)
 	}
 }
@@ -164,11 +164,11 @@ func (l *List) String() string {
 
 			for j := 0; j < x.level[i].span-1; j++ {
 				tmp = tmp.level[0].forward
-				n += len(fmt.Sprintf("%v", tmp.entry.key)) // entry
-				n++                                        // space
+				n += len(fmt.Sprintf("%v", tmp.entry.GetKey())) // entry
+				n++                                             // space
 			}
 
-			buffer.WriteString(fmt.Sprintf("%v%v", x.entry.key, l.genSpace(n)))
+			buffer.WriteString(fmt.Sprintf("%v%v", x.entry.GetKey(), l.genSpace(n)))
 			x = x.level[i].forward
 		}
 

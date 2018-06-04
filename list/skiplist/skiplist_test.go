@@ -40,7 +40,7 @@ func Test_SkipListRandInsert(t *testing.T) {
 	idx := 0
 	iter := NewIterator(skipList)
 	for iter.Next() {
-		if iter.node.entry.key.(int) != idx {
+		if iter.GetKey().(int) != idx {
 			t.Fatalf("want %v, got %v\n", idx, iter.GetKey().(int))
 		}
 
@@ -78,7 +78,7 @@ func Test_SkipListRandDelete(t *testing.T) {
 	idx := 5
 	iter := NewIterator(skipList)
 	for iter.Next() {
-		if iter.node.entry.key.(int) != idx {
+		if iter.GetKey().(int) != idx {
 			t.Fatalf("want %v, got %v\n", idx, iter.GetKey().(int))
 		}
 

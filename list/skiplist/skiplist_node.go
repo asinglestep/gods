@@ -1,28 +1,8 @@
 package skiplist
 
-// Entry Entry
-type Entry struct {
-	key   interface{}
-	value interface{}
-}
-
-// NewEntry 创建Entry
-func NewEntry(key, val interface{}) *Entry {
-	return &Entry{
-		key:   key,
-		value: val,
-	}
-}
-
-// GetKey GetKey
-func (e *Entry) GetKey() interface{} {
-	return e.key
-}
-
-// GetValue GetValue
-func (e *Entry) GetValue() interface{} {
-	return e.value
-}
+import (
+	"github.com/asinglestep/gods/utils"
+)
 
 // Level Level
 type Level struct {
@@ -32,7 +12,7 @@ type Level struct {
 
 // Node Node
 type Node struct {
-	entry    *Entry // 节点数据
+	entry    *utils.Entry // 节点数据
 	level    []Level
 	backward *Node
 }
@@ -40,7 +20,7 @@ type Node struct {
 // NewNode 创建节点
 func NewNode(level int, key, val interface{}) *Node {
 	node := &Node{}
-	node.entry = NewEntry(key, val)
+	node.entry = utils.NewEntry(key, val)
 	node.level = make([]Level, level)
 
 	return node
