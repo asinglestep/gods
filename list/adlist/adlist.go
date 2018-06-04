@@ -24,7 +24,6 @@ func NewList(comparator utils.Comparator) *List {
 // NewListWithoutComparator NewListWithoutComparator
 func NewListWithoutComparator() *List {
 	l := &List{}
-	l.comparator = nil
 
 	return l
 }
@@ -147,7 +146,7 @@ func (l *List) SearchNode(entry interface{}) *Node {
 	}
 
 	for node != nil {
-		if l.comparator.Compare(node.entry, entry) == 0 {
+		if l.comparator.Compare(node.entry, entry) == utils.Et {
 			return node
 		}
 

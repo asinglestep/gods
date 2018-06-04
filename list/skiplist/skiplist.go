@@ -1,49 +1,54 @@
 package skiplist
 
 import (
+	"bytes"
 	"fmt"
 	"math/rand"
-	"os/exec"
-	"runtime"
 	"time"
 
-	dot "github.com/asinglestep/godot"
+	"github.com/asinglestep/gods/utils"
 )
 
 const (
 	MAX_LEVEL = 32 // 跳跃表最大层数
 )
 
-// SkipList SkipList
-type SkipList struct {
-	head  *SkipListNode
-	level int // 当前跳跃表的最大层数
+// List List
+type List struct {
+	level  int // 当前跳跃表的最大层数
+	length int // 长度
+	head   *Node
+
+	comparator utils.Comparator
 }
 
-// NewSkipList 创建跳跃表
-func NewSkipList() *SkipList {
-	list := &SkipList{}
+// NewList 创建跳跃表
+func NewList(comparator utils.Comparator) *List {
+	list := &List{}
 	list.level = 1
-	list.head = NewSkipListNode(MAX_LEVEL, 0, nil)
+	list.length = 0
+	list.head = NewNode(MAX_LEVEL, nil, nil)
+	list.comparator = comparator
 
 	return list
 }
 
 // Search 查找
-func (sl *SkipList) Search(key Key) *Entry {
-	x := sl.head
+func (l *List) Search(key interface{}) *Entry {
+	x := l.head
 
-	for i := sl.level - 1; i >= 0; i-- {
-		for x.forward[i] != nil {
-			if x.forward[i].enrty.Key.less(key) {
-				x = x.forward[i]
-			} else {
-				if x.forward[i].enrty.Key.equal(key) {
-					return x.forward[i].enrty
-				}
+	for i := l.level - 1; i >= 0; i-- {
+		for x.level[i].forward != nil {
+			res := l.comparator.Compare(x.level[i].forward.entry.key, key)
+			if res == utils.Et {
+				return x.level[i].forward.entry
+			}
 
+			if res == utils.Gt {
 				break
 			}
+
+			x = x.level[i].forward
 		}
 	}
 
@@ -51,137 +56,130 @@ func (sl *SkipList) Search(key Key) *Entry {
 }
 
 // Insert 插入
-func (sl *SkipList) Insert(key Key, val Value) {
-	x := sl.head
-	level := randomLevel()
-	update := make([]*SkipListNode, MAX_LEVEL)
+func (l *List) Insert(key, val interface{}) {
+	x := l.head
+	level := l.randomLevel()
+	update := make([]*Node, MAX_LEVEL)
+	rank := make([]int, MAX_LEVEL)
 
-	// 将0到sl.level层中最后一个小于key的节点保存到update中
-	for i := sl.level - 1; i >= 0; i-- {
-		for x.forward[i] != nil && x.forward[i].enrty.Key.less(key) {
-			x = x.forward[i]
+	// 将第0层到第l.level层中最后一个小于key的节点保存到update中
+	for i := l.level - 1; i >= 0; i-- {
+		if i == l.level-1 {
+			rank[i] = 0
+		} else {
+			rank[i] = rank[i+1]
+		}
+
+		for x.level[i].forward != nil && l.comparator.Compare(x.level[i].forward.entry.key, key) == utils.Lt {
+			rank[i] += x.level[i].span
+			x = x.level[i].forward
 		}
 
 		update[i] = x
 	}
 
-	// update的sl.level到level层的前一个节点为head
-	if level > sl.level {
-		for i := sl.level; i < level; i++ {
-			update[i] = sl.head
+	// update的l.level到level层的前一个节点为head
+	if level > l.level {
+		for i := l.level; i < level; i++ {
+			rank[i] = 0
+			update[i] = l.head
+			update[i].level[i].span = l.length
 		}
 
-		sl.level = level
+		l.level = level
 	}
 
-	nNode := NewSkipListNode(level, key, val)
+	node := NewNode(level, key, val)
 	for i := 0; i < level; i++ {
-		nNode.forward[i] = update[i].forward[i]
-		update[i].forward[i] = nNode
+		// forward
+		node.level[i].forward = update[i].level[i].forward
+		update[i].level[i].forward = node
+
+		// span
+		node.level[i].span = update[i].level[i].span - (rank[0] - rank[i])
+		update[i].level[i].span = rank[0] - rank[i] + 1
 	}
+
+	for i := level; i < l.level; i++ {
+		update[i].level[i].span++
+	}
+
+	node.backward = update[0]
+	l.length++
 }
 
 // Delete 删除
-func (sl *SkipList) Delete(key Key) {
-	x := sl.head
+func (l *List) Delete(key interface{}) {
+	x := l.head
+	update := make([]*Node, MAX_LEVEL)
 
-	for i := sl.level - 1; i >= 0; i-- {
-		for x.forward[i] != nil {
-			if x.forward[i].enrty.Key.less(key) {
-				// 当前节点的key小于要删除的key，取下一个节点
-				x = x.forward[i]
-			} else {
-				// 找到要删除的key，删除这一层包含要删除key的节点
-				if x.forward[i].enrty.Key.equal(key) {
-					sl.deleteNextNode(x, i)
-				}
+	for i := l.level - 1; i >= 0; i-- {
+		for x.level[i].forward != nil && l.comparator.Compare(x.level[i].forward.entry.key, key) == utils.Lt {
+			// 当前节点的key小于要删除的key，取下一个节点
+			x = x.level[i].forward
+		}
 
-				break
-			}
+		// 最后一个小于key的节点保存到update中
+		update[i] = x
+	}
+
+	dNode := x.level[0].forward
+	if l.comparator.Compare(dNode.entry.key, key) == utils.Et {
+		l.deleteNode(update, dNode)
+	}
+}
+
+func (l *List) deleteNode(update []*Node, dNode *Node) {
+	for i := 0; i < l.level; i++ {
+		if update[i].level[i].forward == dNode {
+			update[i].level[i].span += dNode.level[i].span - 1
+			update[i].level[i].forward = dNode.level[i].forward
+			dNode.level[i].forward = nil
+		} else {
+			update[i].level[i].span--
+		}
+
+		if l.level > 1 && l.head.level[i].forward == nil {
+			l.level--
 		}
 	}
-}
 
-// deleteNextNode 删除level层的node的下一个节点
-func (sl *SkipList) deleteNextNode(node *SkipListNode, level int) {
-	next := node.forward[level]
-	node.forward[level] = node.forward[level].forward[level]
-	next.forward[level] = nil
-	if sl.head.forward[level] == nil {
-		sl.level--
+	if dNode.level[0].forward != nil {
+		dNode.level[0].forward.backward = dNode.backward
 	}
+
+	l.length--
 }
 
-// PrintSkipList 打印SkipList
-func (sl *SkipList) PrintSkipList() {
-	for i := sl.level - 1; i >= 0; i-- {
-		x := sl.head
-		fmt.Printf("第%d层\n", i)
+// String String
+func (l *List) String() string {
+	buffer := bytes.Buffer{}
+	for i := l.level - 1; i >= 0; i-- {
+		x := l.head
+		buffer.WriteString(fmt.Sprintf("第%d层\t", i))
+
 		for x != nil {
-			fmt.Printf("%v\t", x.enrty.Key)
-			x = x.forward[i]
+			n := 1
+			tmp := x
+
+			for j := 0; j < x.level[i].span-1; j++ {
+				tmp = tmp.level[0].forward
+				n += len(fmt.Sprintf("%v", tmp.entry.key)) // entry
+				n++                                        // space
+			}
+
+			buffer.WriteString(fmt.Sprintf("%v%v", x.entry.key, l.genSpace(n)))
+			x = x.level[i].forward
 		}
 
-		fmt.Println("")
-	}
-}
-
-// Dot Dot
-func (sl *SkipList) Dot() error {
-	dGraph := dot.NewGraph()
-	dGraph.SetNodeGlobalAttr(map[string]string{
-		"height":  ".1",
-		"shape":   "record",
-		"width":   ".1",
-		"rankdir": "LR",
-		"rotate":  "90",
-	})
-
-	dGraph.SetNodeGlobalAttr(map[string]string{
-		"shape": "plaintext",
-	})
-
-	x := sl.head
-	for x != nil {
-		dNode := x.addDotNode(sl.level)
-		dGraph.AddNode(dNode)
-
-		x = x.forward[0]
+		buffer.WriteString("\n")
 	}
 
-	for i := sl.level - 1; i >= 0; i-- {
-		x := sl.head
-		for x.forward[i] != nil {
-			dEdge := x.addDotEdge(i)
-			dGraph.AddEdge(dEdge)
-
-			x = x.forward[i]
-		}
-	}
-
-	if err := dot.GenerateDotFile("skiplist.dot", dGraph); err != nil {
-		return err
-	}
-
-	if err := exec.Command("dot", "-Tpng", "skiplist.dot", "-o", "skiplist.png").Run(); err != nil {
-		return err
-	}
-
-	var cmd *exec.Cmd
-	switch runtime.GOOS {
-	case "darwin":
-		cmd = exec.Command("open", "skiplist.png")
-	}
-
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-
-	return nil
+	return buffer.String()
 }
 
 // randomLevel randomLevel
-func randomLevel() int {
+func (l *List) randomLevel() int {
 	level := 1
 	for rand.New(rand.NewSource(time.Now().UnixNano())).Float32() < 0.5 {
 		level++
@@ -192,4 +190,14 @@ func randomLevel() int {
 	}
 
 	return level
+}
+
+// genSpace genSpace
+func (l *List) genSpace(n int) string {
+	buffer := bytes.Buffer{}
+	for i := 0; i < n; i++ {
+		buffer.WriteString(" ")
+	}
+
+	return buffer.String()
 }
