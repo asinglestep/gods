@@ -15,12 +15,12 @@ func NewEntry(key, val interface{}) *Entry {
 	return entry
 }
 
-// GetKey GetKey
+// GetKey 获取key
 func (e *Entry) GetKey() interface{} {
 	return e.key
 }
 
-// GetValue GetValue
+// GetValue 获取value
 func (e *Entry) GetValue() interface{} {
 	return e.value
 }
