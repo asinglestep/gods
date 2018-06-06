@@ -29,8 +29,8 @@ func NewTree(comparator utils.Comparator) *Tree {
 }
 
 // Insert 插入
-func (t *Tree) Insert(entry *utils.Entry) {
-	node := NewTreeNode(entry, t.rand())
+func (t *Tree) Insert(key, val interface{}) {
+	node := NewTreeNode(utils.NewEntry(key, val), t.rand())
 	t.insertNode(node)
 }
 
@@ -40,8 +40,9 @@ func (t *Tree) insertNode(node *TreeNode) {
 	var parent *TreeNode
 
 	for cur := *next; !cur.isSentinel(); cur = *next {
-		res := t.comparator.Compare(cur.entry, node.entry)
+		res := t.comparator.Compare(cur.GetKey(), node.GetKey())
 		if res == utils.Et {
+			cur.entry.SetValue(node.GetValue())
 			return
 		}
 
@@ -86,11 +87,11 @@ func (t *Tree) insertFixUp(node *TreeNode) {
 }
 
 // Delete 删除
-func (t *Tree) Delete(entry *utils.Entry) {
+func (t *Tree) Delete(key interface{}) {
 	node := t.root
 
 	for !node.isSentinel() {
-		res := t.comparator.Compare(node.entry, entry)
+		res := t.comparator.Compare(node.GetKey(), key)
 		if res == utils.Et {
 			t.deleteNode(node)
 			return
@@ -141,8 +142,28 @@ func (t *Tree) deleteNode(node *TreeNode) {
 		node.parent.right = SentinelNode
 	}
 
-	node.parent = nil
+	node.free()
 	t.size--
+}
+
+// Search 查找
+func (t *Tree) Search(key interface{}) *TreeNode {
+	node := t.root
+
+	for !node.isSentinel() {
+		res := t.comparator.Compare(node.GetKey(), key)
+		if res == utils.Et {
+			return node
+		}
+
+		if res == utils.Lt {
+			node = node.right
+		} else {
+			node = node.left
+		}
+	}
+
+	return nil
 }
 
 // minimum 中序遍历后，树的最小节点
@@ -153,6 +174,16 @@ func (t *Tree) minimum() *TreeNode {
 // maximum 中序遍历后，树的最大节点
 func (t *Tree) maximum() *TreeNode {
 	return t.root.maximum()
+}
+
+// rand 生成随机数 xorshift
+func (t *Tree) rand() uint32 {
+	x := t.seed
+	x ^= x << 13
+	x ^= x >> 17
+	x ^= x << 5
+	t.seed = x
+	return x
 }
 
 // VerifTreap 验证是否是treap
@@ -173,7 +204,7 @@ func (t *Tree) VerifTreap() bool {
 		// 验证左节点的优先级
 		if !node.left.isSentinel() {
 			if node.left.priority < node.priority {
-				fmt.Printf("节点[%v]的优先级错误, 左节点的优先级[%v]小于当前节点的优先级[%v]\n", node.entry, node.left.priority, node.priority)
+				fmt.Printf("节点[%v]的优先级错误, 左节点的优先级[%v]小于当前节点的优先级[%v]\n", node.GetKey(), node.left.priority, node.priority)
 				return false
 			}
 		}
@@ -181,7 +212,7 @@ func (t *Tree) VerifTreap() bool {
 		// 验证右节点的优先级
 		if !node.right.isSentinel() {
 			if node.right.priority < node.priority {
-				fmt.Printf("节点[%v]的优先级错误, 右节点的优先级[%v]小于当前节点的优先级[%v]\n", node.entry, node.right.priority, node.priority)
+				fmt.Printf("节点[%v]的优先级错误, 右节点的优先级[%v]小于当前节点的优先级[%v]\n", node.GetKey(), node.right.priority, node.priority)
 				return false
 			}
 		}
@@ -197,10 +228,15 @@ func (t *Tree) VerifTreap() bool {
 
 	// 验证顺序
 	for i := 0; i < len(entries)-1; i++ {
-		if t.comparator.Compare(entries[i], entries[i+1]) == utils.Gt {
-			fmt.Printf("key的顺序错误\n")
+		if t.comparator.Compare(entries[i].GetKey(), entries[i+1].GetKey()) == utils.Gt {
+			fmt.Printf("Key顺序错误\n")
 			return false
 		}
+	}
+
+	if t.size != len(entries) {
+		fmt.Printf("t.size != len(entries)\n")
+		return false
 	}
 
 	return true
@@ -263,14 +299,4 @@ func (t *Tree) Dot() error {
 	}
 
 	return nil
-}
-
-// rand 生成随机数 xorshift
-func (t *Tree) rand() uint32 {
-	x := t.seed
-	x ^= x << 13
-	x ^= x >> 17
-	x ^= x << 5
-	t.seed = x
-	return x
 }

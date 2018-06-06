@@ -31,6 +31,16 @@ func NewTreeNode(entry *utils.Entry, priority uint32) *TreeNode {
 	return node
 }
 
+// GetKey 获取key
+func (node *TreeNode) GetKey() interface{} {
+	return node.entry.GetKey()
+}
+
+// GetValue 获取value
+func (node *TreeNode) GetValue() interface{} {
+	return node.entry.GetValue()
+}
+
 // leftRotate 左旋
 func (node *TreeNode) leftRotate() *TreeNode {
 	r := node.right
@@ -156,6 +166,14 @@ func (node *TreeNode) prev() *TreeNode {
 	}
 
 	return parent
+}
+
+// free free
+func (node *TreeNode) free() {
+	node.parent = nil
+	node.left = nil
+	node.right = nil
+	node.entry = nil
 }
 
 // dot dot

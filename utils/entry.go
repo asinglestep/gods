@@ -20,7 +20,17 @@ func (e *Entry) GetKey() interface{} {
 	return e.key
 }
 
+// SetKey 设置key
+func (e *Entry) SetKey(key interface{}) {
+	e.key = key
+}
+
 // GetValue 获取value
 func (e *Entry) GetValue() interface{} {
 	return e.value
+}
+
+// SetValue 设置value
+func (e *Entry) SetValue(val interface{}) {
+	e.value = val
 }

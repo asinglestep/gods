@@ -5,8 +5,6 @@ import (
 	"math/rand"
 	"testing"
 	"time"
-
-	"github.com/asinglestep/gods/utils"
 )
 
 type treapComparator struct {
@@ -14,14 +12,14 @@ type treapComparator struct {
 
 // Compare Compare
 func (tc treapComparator) Compare(k1, k2 interface{}) int {
-	e1 := k1.(*utils.Entry)
-	e2 := k2.(*utils.Entry)
+	i1 := k1.(int)
+	i2 := k2.(int)
 
-	if e1.GetKey().(int) > e2.GetKey().(int) {
+	if i1 > i2 {
 		return 1
 	}
 
-	if e1.GetKey().(int) < e2.GetKey().(int) {
+	if i1 < i2 {
 		return -1
 	}
 
@@ -36,7 +34,7 @@ func Test_TreapRandInsert(t *testing.T) {
 	// array = []int{8, 4, 0, 6, 3, 9, 1, 5, 2, 7}
 
 	for _, v := range array {
-		tree.Insert(utils.NewEntry(v, v))
+		tree.Insert(v, v)
 	}
 
 	// fmt.Printf("\n随机插入%v个数\n", num)
@@ -58,25 +56,26 @@ func Test_TreapRandInsert(t *testing.T) {
 
 func Test_TreapRandDelete(t *testing.T) {
 	tree := NewTree(treapComparator{})
-	var num = 10
+	var num = 10000000
 
 	array := rand.New(rand.NewSource(time.Now().UnixNano())).Perm(num)
 	// array = []int{8, 4, 0, 6, 3, 9, 1, 5, 2, 7}
 	// fmt.Printf("随机插入数组: %v\n", array)
 
 	for _, v := range array {
-		tree.Insert(utils.NewEntry(v, v))
+		tree.Insert(v, v)
 	}
 
 	delArray := rand.New(rand.NewSource(time.Now().UnixNano())).Perm(num / 2)
 	// fmt.Printf("随机删除数组: %v\n", delArray)
 
 	for _, v := range delArray {
-		tree.Delete(utils.NewEntry(v, v))
+		tree.Delete(v)
 	}
 
 	fmt.Printf("\n删除结果是否正确: %v\n", tree.VerifTreap())
 	// tree.Dot()
+
 	idx := num / 2
 	iter := NewIterator(tree)
 	for iter.Next() {
@@ -85,5 +84,26 @@ func Test_TreapRandDelete(t *testing.T) {
 		}
 
 		idx++
+	}
+}
+
+func Test_TreapRandSearch(t *testing.T) {
+	tree := NewTree(treapComparator{})
+	var num = 1000
+
+	array := rand.New(rand.NewSource(time.Now().UnixNano())).Perm(num)
+	// array = []int{8, 4, 0, 6, 3, 9, 1, 5, 2, 7}
+	// fmt.Printf("随机插入数组: %v\n", array)
+
+	for _, v := range array {
+		tree.Insert(v, v)
+	}
+
+	key := rand.New(rand.NewSource(time.Now().UnixNano())).Intn(num)
+	// fmt.Printf("查找key: %v\n", key)
+
+	node := tree.Search(key)
+	if node.GetKey().(int) != key {
+		t.Fatalf("want %v, got %v\n", key, node.GetKey().(int))
 	}
 }
