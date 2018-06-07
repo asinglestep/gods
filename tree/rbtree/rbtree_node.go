@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	dot "github.com/asinglestep/godot"
+	"github.com/asinglestep/gods/utils"
 )
 
 const (
@@ -25,52 +26,20 @@ func (c Color) String() string {
 	return "Unknown"
 }
 
-type Key int32
-
-// less less
-// k < key, 返回true
-func (k Key) less(key Key) bool {
-	if k < key {
-		return true
-	}
-
-	return false
-}
-
-// more more
-// k > key, 返回true
-func (k Key) more(key Key) bool {
-	if k > key {
-		return true
-	}
-
-	return false
-}
-
-// equal equal
-// k = key, 返回true
-func (k Key) equal(key Key) bool {
-	if k == key {
-		return true
-	}
-
-	return false
-}
-
 // TreeNode 红黑树节点
 type TreeNode struct {
 	color  Color
-	key    Key
+	entry  *utils.Entry
 	left   *TreeNode
 	right  *TreeNode
 	parent *TreeNode
 }
 
 // NewTreeNode 新建一个节点
-func NewTreeNode(key Key) *TreeNode {
+func NewTreeNode(entry *utils.Entry) *TreeNode {
 	node := &TreeNode{}
 	node.color = RED
-	node.key = key
+	node.entry = entry
 	node.left = NewSentinel()
 	node.right = NewSentinel()
 
@@ -81,9 +50,19 @@ func NewTreeNode(key Key) *TreeNode {
 func NewSentinel() *TreeNode {
 	node := &TreeNode{}
 	node.color = BLACK
-	node.key = -1
+	node.entry = nil
 
 	return node
+}
+
+// GetKey 获取key
+func (node *TreeNode) GetKey() interface{} {
+	return node.entry.GetKey()
+}
+
+// GetValue 获取value
+func (node *TreeNode) GetValue() interface{} {
+	return node.entry.GetValue()
 }
 
 // nodeColorStat 节点颜色统计
@@ -205,6 +184,14 @@ func (node *TreeNode) getBrother() *TreeNode {
 	}
 
 	return node.parent.right
+}
+
+// free free
+func (node *TreeNode) free() {
+	node.parent = nil
+	node.left = nil
+	node.right = nil
+	node.entry = nil
 }
 
 // reverse 倒序

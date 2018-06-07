@@ -7,152 +7,102 @@ import (
 	"runtime"
 
 	dot "github.com/asinglestep/godot"
+	"github.com/asinglestep/gods/utils"
 )
 
 // Tree Tree
 type Tree struct {
-	root *TreeNode
+	root       *TreeNode
+	size       int // 节点数
+	comparator utils.Comparator
 }
 
 // NewTree NewTree
-func NewTree() *Tree {
+func NewTree(comparator utils.Comparator) *Tree {
 	t := &Tree{}
 	t.root = NewSentinel()
+	t.comparator = comparator
 
 	return t
 }
 
 // Insert 插入
-func (t *Tree) Insert(key Key) {
-	// 插入新节点
-	fixNode := t.insertNode(NewTreeNode(key))
-	if fixNode == nil {
-		return
-	}
-
-	// 修复
-	t.insertFixUp(fixNode)
+func (t *Tree) Insert(key, val interface{}) {
+	node := NewTreeNode(utils.NewEntry(key, val))
+	t.insertNode(node)
 	return
 }
 
 // insertNode 插入新节点
-func (t *Tree) insertNode(newNode *TreeNode) (fixNode *TreeNode) {
-	// 哨兵节点
-	if t.root.isSentinel() {
-		t.root = newNode
-		return newNode
-	}
+func (t *Tree) insertNode(node *TreeNode) {
+	next := &t.root
+	var parent *TreeNode
 
-	tmpNode := t.root
-
-	for {
-		if newNode.key.equal(tmpNode.key) {
-			return nil
+	for cur := *next; !cur.isSentinel(); cur = *next {
+		res := t.comparator.Compare(cur.GetKey(), node.GetKey())
+		if res == utils.Et {
+			cur.entry.SetValue(node.GetValue())
+			return
 		}
 
-		if newNode.key.less(tmpNode.key) {
-			if tmpNode.left.isSentinel() {
-				// 插入到左节点
-				tmpNode.left = newNode
-				break
-			}
-
-			tmpNode = tmpNode.left
+		parent = cur
+		if res == utils.Lt {
+			// 在右子树查找
+			next = &cur.right
 		} else {
-			if tmpNode.right.isSentinel() {
-				// 插入到右节点
-				tmpNode.right = newNode
-				break
-			}
-
-			tmpNode = tmpNode.right
+			// 在左子树查找
+			next = &cur.left
 		}
 	}
 
-	newNode.parent = tmpNode
-	return newNode
+	*next = node
+	node.parent = parent
+	t.insertFixUp(node)
+	t.size++
 }
 
 // insertFixUp 插入节点后进行修复
-func (t *Tree) insertFixUp(fixNode *TreeNode) {
+func (t *Tree) insertFixUp(node *TreeNode) {
 	for {
 		// 修复节点为根节点，变成黑色节点
-		parent := fixNode.parent
+		parent := node.parent
 		if parent == nil {
-			fixNode.color = BLACK
-			t.root = fixNode
+			t.caseRoot()
 			return
 		}
 
-		// 修复节点的父节点为黑色，不处理
-		if parent.isBlack() {
-			return
-		}
-
-		// 父节点为红色
 		// 获取叔叔节点
 		uncle := parent.getBrother()
 		grandfather := parent.parent
-		fIsLeft := fixNode.isLeft()
-		fIsRight := fixNode.isRight()
-		pIsLeft := parent.isLeft()
-		pIsRight := parent.isRight()
 
-		if uncle.isRed() {
+		switch {
+		case parent.isBlack():
+			// 修复节点的父节点为黑色，不处理
+			return
+
+		case uncle.isRed():
 			// 叔叔节点也是红色
-			parent.color = BLACK
-			uncle.color = BLACK
-			grandfather.color = RED
-			fixNode = grandfather
-		} else {
-			// 叔叔节点是黑色
-			switch {
+			node = t.caseUncleIsRed(parent, uncle)
+
+		case node.isLeft() && parent.isLeft():
 			// 当前节点为左节点，父节点为左节点
-			case fIsLeft && pIsLeft:
-				parent.color = BLACK
-				grandfatherParent := grandfather.parent
-				isLeft := grandfather.isLeft()
-				tmpNode := grandfather.rightRotate()
+			t.caseNodeAndParentIsLeft(parent)
+			return
 
-				if grandfatherParent == nil {
-					t.root = tmpNode
-				} else if isLeft {
-					grandfatherParent.left = tmpNode
-				} else {
-					grandfatherParent.right = tmpNode
-				}
-
-				parent.right.color = RED
-				return
-
+		case node.isRight() && parent.isRight():
 			// 当前节点为右节点，父节点是右节点
-			case fIsRight && pIsRight:
-				parent.color = BLACK
-				grandfatherParent := grandfather.parent
-				isLeft := grandfather.isLeft()
-				tmpNode := grandfather.leftRotate()
+			t.caseNodeAndParentIsRight(parent)
+			return
 
-				if grandfatherParent == nil {
-					t.root = tmpNode
-				} else if isLeft {
-					grandfatherParent.left = tmpNode
-				} else {
-					grandfatherParent.right = tmpNode
-				}
-
-				parent.left.color = RED
-				return
-
+		case node.isLeft() && parent.isRight():
 			// 当前节点为左节点，父节点为右节点
-			case fIsLeft && pIsRight:
-				grandfather.right = parent.rightRotate()
-				fixNode = parent
+			grandfather.right = parent.rightRotate()
+			node = parent
 
+		case node.isRight() && parent.isLeft():
 			// 当前节点为右节点，父节点为左节点
-			case fIsRight && pIsLeft:
-				grandfather.left = parent.leftRotate()
-				fixNode = parent
-			}
+			grandfather.left = parent.leftRotate()
+			node = parent
 		}
 	}
 }
@@ -663,4 +613,54 @@ func (t *Tree) Dot() error {
 	}
 
 	return nil
+}
+
+// caseRoot 修复节点为根节点
+func (t *Tree) caseRoot() {
+	t.root.color = BLACK
+}
+
+// caseUncleIsRed 修复节点的叔叔节点为红色
+func (t *Tree) caseUncleIsRed(parent, uncle *TreeNode) *TreeNode {
+	parent.color = BLACK
+	uncle.color = BLACK
+	parent.parent.color = RED
+	return parent.parent
+}
+
+// caseNodeAndParentIsLeft 修复节点 和 修复节点的父节点 都是左节点
+func (t *Tree) caseNodeAndParentIsLeft(parent *TreeNode) {
+	grandfather := parent.parent
+	greatGrandfather := grandfather.parent
+
+	parent.color = BLACK
+	isLeft := grandfather.isLeft()
+	ggfChildren := grandfather.rightRotate()
+
+	t.updateChildren(greatGrandfather, ggfChildren, isLeft)
+	parent.right.color = RED
+}
+
+// caseNodeAndParentIsRight 修复节点 和 修复节点的父节点 都是右节点
+func (t *Tree) caseNodeAndParentIsRight(parent *TreeNode) {
+	grandfather := parent.parent
+	greatGrandfather := grandfather.parent
+
+	parent.color = BLACK
+	isLeft := grandfather.isLeft()
+	ggfChildren := grandfather.leftRotate()
+
+	t.updateChildren(greatGrandfather, ggfChildren, isLeft)
+	parent.left.color = RED
+}
+
+// updateChild 更新父节点的子节点
+func (t *Tree) updateChildren(parent, children *TreeNode, isLeft bool) {
+	if parent == nil {
+		t.root = children
+	} else if isLeft {
+		parent.left = children
+	} else {
+		parent.right = children
+	}
 }
