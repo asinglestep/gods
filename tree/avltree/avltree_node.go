@@ -214,15 +214,15 @@ func reverse(list []*TreeNode) []*TreeNode {
 func (node *TreeNode) dot() (dNode *dot.Node, dEdge *dot.Edge) {
 	// 添加node
 	dNode = &dot.Node{}
-	dNode.Name = fmt.Sprintf("%d", node.key)
+	dNode.Name = fmt.Sprintf("%d", node.GetKey())
 	dNode.Attr = map[string]string{
-		"label": fmt.Sprintf("\"<f0> | %d | <f1> \"", node.key),
+		"label": fmt.Sprintf("\"<f0> | %d | <f1> \"", node.GetKey()),
 	}
 
 	// 添加edge
 	if node.parent != nil {
 		dEdge = &dot.Edge{}
-		dEdge.Src = fmt.Sprintf("%d", node.parent.key)
+		dEdge.Src = fmt.Sprintf("%d", node.parent.GetKey())
 
 		if node.isLeft() {
 			dEdge.SrcPort = ":f0"
@@ -230,7 +230,7 @@ func (node *TreeNode) dot() (dNode *dot.Node, dEdge *dot.Edge) {
 			dEdge.SrcPort = ":f1"
 		}
 
-		dEdge.Dst = fmt.Sprintf("%d", node.key)
+		dEdge.Dst = fmt.Sprintf("%d", node.GetKey())
 	}
 
 	return dNode, dEdge

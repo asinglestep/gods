@@ -35,20 +35,20 @@ func NewTree(comparator utils.Comparator) *Tree {
 }
 
 // Insert 插入一个节点
-func (t *Tree) Insert(entry *utils.Entry) {
+func (t *Tree) Insert(key, val interface{}) {
 	// 插入新节点
-	newNode := NewTreeNode(entry)
+	newNode := NewTreeNode(utils.NewEntry(key, val))
 	t.insertNode(newNode)
 	return
 }
 
 // insertNode 插入一个新节点
-func (t *Tree) insertNode(newNode *TreeNode) {
+func (t *Tree) insertNode(node *TreeNode) {
 	next := &t.root
 	var parent *TreeNode
 
 	for cur := *next; !cur.isSentinel(); cur = *next {
-		res := t.comparator.Compare(newNode.entry, cur.entry)
+		res := t.comparator.Compare(node.GetKey(), cur.GetKey())
 		if res == utils.Et {
 			return
 		}
@@ -61,89 +61,82 @@ func (t *Tree) insertNode(newNode *TreeNode) {
 		}
 	}
 
-	*next = newNode
-	newNode.parent = parent
+	*next = node
+	node.parent = parent
 
 	// 插入修复
-	t.insertFixUp(newNode)
+	t.insertFixUp(node)
 	return
 }
 
 // insertFixUp 插入修复
 func (t *Tree) insertFixUp(node *TreeNode) {
 	var bRotate bool
-	tmpNode := node.parent
+	repNode := node.parent
 
-	for tmpNode != nil {
+	for repNode != nil {
 		bRotate = false
 
 		// 插入节点后，树的高度没有变化，不需要修复
-		if tmpNode.height == tmpNode.max()+1 {
+		if repNode.height == repNode.max()+1 {
 			return
 		}
 
-		gp := tmpNode.parent
-		isLeft := tmpNode.isLeft()
+		gp := repNode.parent
+		isLeft := repNode.isLeft()
 
-		switch tmpNode.balanceFactor() {
-		// 左子树比右子树高2
+		switch repNode.balanceFactor() {
 		case LEFT_2_HIGHER_THAN_RIGHT:
+			// 左子树比右子树高2
 			bRotate = true
 
-			// 插入节点是左节点
-			if node.isLeft() {
-				tmpNode = tmpNode.rightRotate()
+			if t.comparator.Compare(node.GetKey(), repNode.left.GetKey()) == utils.Lt {
+				// 插入节点 在 修复节点的左子树的左子树上
+				repNode = repNode.rightRotate()
 			} else {
-				tmpNode = tmpNode.leftRightRotate()
+				// 插入节点 在 修复节点的左子树的右子树上
+				repNode = repNode.leftRightRotate()
 			}
 
-		// 右子树比左子树高2
 		case RIGHT_2_HIGHER_THAN_LEFT:
+			// 右子树比左子树高2
 			bRotate = true
 
-			// 插入节点是左节点
-			if node.isLeft() {
-				tmpNode = tmpNode.rightLeftRotate()
+			if t.comparator.Compare(node.GetKey(), repNode.right.GetKey()) == utils.Lt {
+				// 插入节点 在 修复节点的右子树的左子树上
+				repNode = repNode.rightLeftRotate()
 			} else {
-				tmpNode = tmpNode.leftRotate()
+				// 插入节点 在 修复节点的右子树的右子树上
+				repNode = repNode.leftRotate()
 			}
 		}
 
 		if bRotate {
-			t.updateChildren(gp, tmpNode, isLeft)
+			t.updateChildren(gp, repNode, isLeft)
 		}
 
-		tmpNode.height = tmpNode.max() + 1
-		tmpNode = tmpNode.parent
+		repNode.height = repNode.max() + 1
+		repNode = repNode.parent
 	}
 }
 
 // Delete 删除指定的节点
-func (t *Tree) Delete(entry *utils.Entry) {
-	delNode := t.root
+func (t *Tree) Delete(key interface{}) {
+	node := t.root
 
-	for !delNode.isSentinel() {
-		res := t.comparator.Compare(entry, delNode.entry)
+	for !node.isSentinel() {
+		res := t.comparator.Compare(key, node.GetKey())
 		if res == utils.Et {
-			t.deleteNode(delNode)
+			t.deleteNode(node)
 			return
 		}
 
 		if res == utils.Lt {
-			delNode = delNode.left
+			node = node.left
 		} else {
-			delNode = delNode.right
+			node = node.right
 		}
 	}
-
-	// fixNode := t.deleteNode(entry)
-	// // 没找到不处理
-	// if fixNode == nil {
-	// 	return
-	// }
-
-	// t.deleteFixUp(fixNode)
-	// return
 }
 
 // deleteNode 删除节点
