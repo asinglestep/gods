@@ -35,22 +35,19 @@ type TreeNode struct {
 	parent *TreeNode
 }
 
+// Sentinel Sentinel
+var Sentinel = &TreeNode{
+	color: BLACK,
+	entry: nil,
+}
+
 // NewTreeNode 新建一个节点
 func NewTreeNode(entry *utils.Entry) *TreeNode {
 	node := &TreeNode{}
 	node.color = RED
 	node.entry = entry
-	node.left = NewSentinel()
-	node.right = NewSentinel()
-
-	return node
-}
-
-// NewSentinel NewSentinel
-func NewSentinel() *TreeNode {
-	node := &TreeNode{}
-	node.color = BLACK
-	node.entry = nil
+	node.left = Sentinel
+	node.right = Sentinel
 
 	return node
 }
@@ -167,7 +164,7 @@ func (node *TreeNode) findPrecursor() *TreeNode {
 
 // isSentinel 是否是哨兵节点
 func (node *TreeNode) isSentinel() bool {
-	return node.entry == nil
+	return node == Sentinel
 }
 
 // getBrother 获取兄弟节点

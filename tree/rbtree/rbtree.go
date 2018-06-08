@@ -20,7 +20,7 @@ type Tree struct {
 // NewTree NewTree
 func NewTree(comparator utils.Comparator) *Tree {
 	t := &Tree{}
-	t.root = NewSentinel()
+	t.root = Sentinel
 	t.comparator = comparator
 
 	return t
