@@ -65,13 +65,6 @@ func (node *TreeNode) GetValue() interface{} {
 	return node.entry.GetValue()
 }
 
-// nodeColorStat 节点颜色统计
-type nodeColorStat struct {
-	blackCount      int64
-	leftBlackCount  int64
-	rightBlackCount int64
-}
-
 // leftRotate 左旋
 func (node *TreeNode) leftRotate() *TreeNode {
 	r := node.right
@@ -174,7 +167,7 @@ func (node *TreeNode) findPrecursor() *TreeNode {
 
 // isSentinel 是否是哨兵节点
 func (node *TreeNode) isSentinel() bool {
-	return node.key == -1
+	return node.entry == nil
 }
 
 // getBrother 获取兄弟节点
@@ -192,6 +185,72 @@ func (node *TreeNode) free() {
 	node.left = nil
 	node.right = nil
 	node.entry = nil
+}
+
+// minimum 以当前节点为根节点，中序遍历后，树的最小节点
+func (node *TreeNode) minimum() *TreeNode {
+	if node.isSentinel() {
+		return nil
+	}
+
+	for !node.left.isSentinel() {
+		node = node.left
+	}
+
+	return node
+}
+
+// maximum 以当前节点为根节点，中序遍历后，树的最大节点
+func (node *TreeNode) maximum() *TreeNode {
+	if node.isSentinel() {
+		return nil
+	}
+
+	for !node.right.isSentinel() {
+		node = node.right
+	}
+
+	return node
+}
+
+// next 中序遍历node的下一个节点
+func (node *TreeNode) next() *TreeNode {
+	if node.isSentinel() {
+		return nil
+	}
+
+	// 在右子树中找最小的节点
+	if n := node.right.minimum(); n != nil {
+		return n
+	}
+
+	parent := node.parent
+	for parent != nil && node.isRight() {
+		node = parent
+		parent = node.parent
+	}
+
+	return parent
+}
+
+// prev 中序遍历node的上一个节点
+func (node *TreeNode) prev() *TreeNode {
+	if node.isSentinel() {
+		return nil
+	}
+
+	// 在左子树中找最大的节点
+	if n := node.left.maximum(); n != nil {
+		return n
+	}
+
+	parent := node.parent
+	for parent != nil && node.isLeft() {
+		node = parent
+		parent = node.parent
+	}
+
+	return parent
 }
 
 // reverse 倒序
@@ -214,10 +273,10 @@ func (node *TreeNode) dot() (dNode *dot.Node, dEdge *dot.Edge) {
 
 	// 添加node
 	dNode = &dot.Node{}
-	dNode.Name = fmt.Sprintf("%d", node.key)
+	dNode.Name = fmt.Sprintf("%d", node.GetKey())
 
 	dNode.Attr = map[string]string{
-		"label":     fmt.Sprintf("\"<f0> | %d | <f1> \"", node.key),
+		"label":     fmt.Sprintf("\"<f0> | %d | <f1> \"", node.GetKey()),
 		"fillcolor": "\"" + color + "\"",
 		"style":     "filled",
 		"fontcolor": "\"#FFFFFF\"",
@@ -227,7 +286,7 @@ func (node *TreeNode) dot() (dNode *dot.Node, dEdge *dot.Edge) {
 	// 添加edge
 	if node.parent != nil {
 		dEdge = &dot.Edge{}
-		dEdge.Src = fmt.Sprintf("%d", node.parent.key)
+		dEdge.Src = fmt.Sprintf("%d", node.parent.GetKey())
 
 		if node.isLeft() {
 			dEdge.SrcPort = ":f0"
@@ -235,8 +294,15 @@ func (node *TreeNode) dot() (dNode *dot.Node, dEdge *dot.Edge) {
 			dEdge.SrcPort = ":f1"
 		}
 
-		dEdge.Dst = fmt.Sprintf("%d", node.key)
+		dEdge.Dst = fmt.Sprintf("%d", node.GetKey())
 	}
 
 	return dNode, dEdge
+}
+
+// nodeColorStat 节点颜色统计
+type nodeColorStat struct {
+	blackCount      int64
+	leftBlackCount  int64
+	rightBlackCount int64
 }
