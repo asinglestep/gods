@@ -368,6 +368,136 @@ func (t *Tree) PrintRbTree() {
 	}
 }
 
+// caseRoot 修复节点为根节点
+func (t *Tree) caseRoot() {
+	t.root.color = BLACK
+}
+
+// iCaseUncleIsRed 插入修复: 修复节点的叔叔节点为红色
+func (t *Tree) iCaseUncleIsRed(parent, uncle *TreeNode) *TreeNode {
+	parent.color = BLACK
+	uncle.color = BLACK
+	parent.parent.color = RED
+	return parent.parent
+}
+
+// iCaseNodeAndParentIsLeft 插入修复: 修复节点 和 修复节点的父节点 都是左节点
+func (t *Tree) iCaseNodeAndParentIsLeft(parent *TreeNode) {
+	grandfather := parent.parent
+	greatGrandfather := grandfather.parent
+
+	parent.color = BLACK
+	isLeft := grandfather.isLeft()
+	ggfChildren := grandfather.rightRotate()
+
+	t.updateChildren(greatGrandfather, ggfChildren, isLeft)
+	parent.right.color = RED
+}
+
+// iCaseNodeAndParentIsRight 插入修复: 修复节点 和 修复节点的父节点 都是右节点
+func (t *Tree) iCaseNodeAndParentIsRight(parent *TreeNode) {
+	grandfather := parent.parent
+	greatGrandfather := grandfather.parent
+
+	parent.color = BLACK
+	isLeft := grandfather.isLeft()
+	ggfChildren := grandfather.leftRotate()
+
+	t.updateChildren(greatGrandfather, ggfChildren, isLeft)
+	parent.left.color = RED
+}
+
+// dCaseNodeIsRed 删除修复: 修复节点是红色
+func (t *Tree) dCaseNodeIsRed(node *TreeNode) {
+	node.color = BLACK
+}
+
+// dCaseBrotherIsRed 删除修复: 修复节点的兄弟节点是红色
+func (t *Tree) dCaseBrotherIsRed(node, brother, parent *TreeNode) {
+	var children *TreeNode
+	brother.color = BLACK
+	parent.color = RED
+	grandfather := parent.parent
+	pIsLeft := parent.isLeft()
+
+	if node.isLeft() {
+		// 修复节点是左节点
+		children = parent.leftRotate()
+	} else {
+		// 修复节点是右节点
+		children = parent.rightRotate()
+	}
+
+	t.updateChildren(grandfather, children, pIsLeft)
+}
+
+// dCaseBrotherLeftIsRedAndBrotherRightIsBlack 删除修复: 修复节点的兄弟节点的左节点是红色，修复节点的兄弟节点的右节点是黑色
+func (t *Tree) dCaseBrotherLeftIsRedAndBrotherRightIsBlack(node, brother, parent *TreeNode) {
+	var children *TreeNode
+	pIsLeft := parent.isLeft()
+	grandfather := parent.parent
+
+	if node.isLeft() {
+		// 修复节点是左节点
+		brother.left.color = parent.color
+		parent.color = BLACK
+		parent.right = brother.rightRotate()
+		children = parent.leftRotate()
+	} else {
+		// 修复节点是右节点
+		brother.color = parent.color
+		parent.color = BLACK
+		brother.left.color = BLACK
+		children = parent.rightRotate()
+	}
+
+	t.updateChildren(grandfather, children, pIsLeft)
+}
+
+// dCaseBrotherRightIsRed 删除修复: 修复节点的兄弟节点的右节点是红色
+func (t *Tree) dCaseBrotherRightIsRed(node, brother, parent *TreeNode) {
+	var children *TreeNode
+	pIsLeft := parent.isLeft()
+	grandfather := parent.parent
+
+	if node.isLeft() {
+		// 修复节点是左节点
+		brother.color = parent.color
+		parent.color = BLACK
+		brother.right.color = BLACK
+		children = parent.leftRotate()
+	} else {
+		// 修复节点是右节点
+		brother.right.color = parent.color
+		parent.color = BLACK
+		parent.left = brother.leftRotate()
+		children = parent.rightRotate()
+	}
+
+	t.updateChildren(grandfather, children, pIsLeft)
+}
+
+// updateChild 更新父节点的子节点
+func (t *Tree) updateChildren(parent, children *TreeNode, isLeft bool) {
+	if parent == nil {
+		t.root = children
+	} else if isLeft {
+		parent.left = children
+	} else {
+		parent.right = children
+	}
+}
+
+// minimum 中序遍历后，树的最小节点
+func (t *Tree) minimum() *TreeNode {
+	return t.root.minimum()
+}
+
+// maximum 中序遍历后，树的最大节点
+func (t *Tree) maximum() *TreeNode {
+	return t.root.maximum()
+}
+
 // VerifRbTree 验证是否是一个红黑树
 func (t *Tree) VerifRbTree() bool {
 	node := t.root
@@ -508,134 +638,4 @@ func (t *Tree) Dot() error {
 	}
 
 	return nil
-}
-
-// caseRoot 修复节点为根节点
-func (t *Tree) caseRoot() {
-	t.root.color = BLACK
-}
-
-// iCaseUncleIsRed 插入修复: 修复节点的叔叔节点为红色
-func (t *Tree) iCaseUncleIsRed(parent, uncle *TreeNode) *TreeNode {
-	parent.color = BLACK
-	uncle.color = BLACK
-	parent.parent.color = RED
-	return parent.parent
-}
-
-// iCaseNodeAndParentIsLeft 插入修复: 修复节点 和 修复节点的父节点 都是左节点
-func (t *Tree) iCaseNodeAndParentIsLeft(parent *TreeNode) {
-	grandfather := parent.parent
-	greatGrandfather := grandfather.parent
-
-	parent.color = BLACK
-	isLeft := grandfather.isLeft()
-	ggfChildren := grandfather.rightRotate()
-
-	t.updateChildren(greatGrandfather, ggfChildren, isLeft)
-	parent.right.color = RED
-}
-
-// iCaseNodeAndParentIsRight 插入修复: 修复节点 和 修复节点的父节点 都是右节点
-func (t *Tree) iCaseNodeAndParentIsRight(parent *TreeNode) {
-	grandfather := parent.parent
-	greatGrandfather := grandfather.parent
-
-	parent.color = BLACK
-	isLeft := grandfather.isLeft()
-	ggfChildren := grandfather.leftRotate()
-
-	t.updateChildren(greatGrandfather, ggfChildren, isLeft)
-	parent.left.color = RED
-}
-
-// dCaseNodeIsRed 删除修复: 修复节点是红色
-func (t *Tree) dCaseNodeIsRed(node *TreeNode) {
-	node.color = BLACK
-}
-
-// dCaseBrotherIsRed 删除修复: 修复节点的兄弟节点是红色
-func (t *Tree) dCaseBrotherIsRed(node, brother, parent *TreeNode) {
-	var children *TreeNode
-	brother.color = BLACK
-	parent.color = RED
-	grandfather := parent.parent
-	pIsLeft := parent.isLeft()
-
-	if node.isLeft() {
-		// 修复节点是左节点
-		children = parent.leftRotate()
-	} else {
-		// 修复节点是右节点
-		children = parent.rightRotate()
-	}
-
-	t.updateChildren(grandfather, children, pIsLeft)
-}
-
-// dCaseBrotherLeftIsRedAndBrotherRightIsBlack 删除修复: 修复节点的兄弟节点的左节点是红色，修复节点的兄弟节点的右节点是黑色
-func (t *Tree) dCaseBrotherLeftIsRedAndBrotherRightIsBlack(node, brother, parent *TreeNode) {
-	var children *TreeNode
-	pIsLeft := parent.isLeft()
-	grandfather := parent.parent
-
-	if node.isLeft() {
-		// 修复节点是左节点
-		brother.left.color = parent.color
-		parent.color = BLACK
-		parent.right = brother.rightRotate()
-		children = parent.leftRotate()
-	} else {
-		// 修复节点是右节点
-		brother.color = parent.color
-		parent.color = BLACK
-		brother.left.color = BLACK
-		children = parent.rightRotate()
-	}
-
-	t.updateChildren(grandfather, children, pIsLeft)
-}
-
-// dCaseBrotherRightIsRed 删除修复: 修复节点的兄弟节点的右节点是红色
-func (t *Tree) dCaseBrotherRightIsRed(node, brother, parent *TreeNode) {
-	var children *TreeNode
-	pIsLeft := parent.isLeft()
-	grandfather := parent.parent
-
-	if node.isLeft() {
-		// 修复节点是左节点
-		brother.color = parent.color
-		parent.color = BLACK
-		brother.right.color = BLACK
-		children = parent.leftRotate()
-	} else {
-		// 修复节点是右节点
-		brother.right.color = parent.color
-		parent.color = BLACK
-		parent.left = brother.leftRotate()
-		children = parent.rightRotate()
-	}
-
-	t.updateChildren(grandfather, children, pIsLeft)
-}
-
-// updateChild 更新父节点的子节点
-func (t *Tree) updateChildren(parent, children *TreeNode, isLeft bool) {
-	if parent == nil {
-		t.root = children
-	} else if isLeft {
-		parent.left = children
-	} else {
-		parent.right = children
-	}
-}
-
-// minimum 中序遍历后，树的最小节点
-func (t *Tree) minimum() *TreeNode {
-	return t.root.minimum()
-}
-
-// maximum 中序遍历后，树的最大节点
-func (t *Tree) maximum() *TreeNode {
-	return t.root.maximum()
 }
