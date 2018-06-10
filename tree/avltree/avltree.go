@@ -66,57 +66,49 @@ func (t *Tree) insertNode(node *TreeNode) {
 
 	// 插入修复
 	t.insertFixUp(node)
-	return
+	t.size++
 }
 
 // insertFixUp 插入修复
 func (t *Tree) insertFixUp(node *TreeNode) {
 	var bRotate bool
-	repNode := node.parent
+	fixNode := node.parent
 
-	for repNode != nil {
+	for fixNode != nil {
 		bRotate = false
 
 		// 插入节点后，树的高度没有变化，不需要修复
-		if repNode.height == repNode.max()+1 {
+		if fixNode.height == fixNode.max()+1 {
 			return
 		}
 
-		gp := repNode.parent
-		isLeft := repNode.isLeft()
+		parent := fixNode.parent
+		isLeft := fixNode.isLeft()
 
-		switch repNode.balanceFactor() {
+		switch fixNode.balanceFactor() {
 		case LEFT_2_HIGHER_THAN_RIGHT:
 			// 左子树比右子树高2
 			bRotate = true
-
-			if t.comparator.Compare(node.GetKey(), repNode.left.GetKey()) == utils.Lt {
-				// 插入节点 在 修复节点的左子树的左子树上
-				repNode = repNode.rightRotate()
-			} else {
-				// 插入节点 在 修复节点的左子树的右子树上
-				repNode = repNode.leftRightRotate()
-			}
+			// 插入节点 在 修复节点的左子树的左子树上，只需要旋转一次
+			// 插入节点 在 修复节点的左子树的右子树上，需要旋转两次
+			bSingleRorate := t.comparator.Compare(node.GetKey(), fixNode.left.GetKey()) == utils.Lt
+			fixNode = t.caseLeft2HigherThanRight(fixNode, bSingleRorate)
 
 		case RIGHT_2_HIGHER_THAN_LEFT:
 			// 右子树比左子树高2
 			bRotate = true
-
-			if t.comparator.Compare(node.GetKey(), repNode.right.GetKey()) == utils.Lt {
-				// 插入节点 在 修复节点的右子树的左子树上
-				repNode = repNode.rightLeftRotate()
-			} else {
-				// 插入节点 在 修复节点的右子树的右子树上
-				repNode = repNode.leftRotate()
-			}
+			// 插入节点 在 修复节点的右子树的右子树上，只需要旋转一次
+			// 插入节点 在 修复节点的右子树的左子树上，需要旋转两次
+			bSingleRorate := t.comparator.Compare(node.GetKey(), fixNode.right.GetKey()) == utils.Gt
+			fixNode = t.caseRight2HigherThanLeft(fixNode, bSingleRorate)
 		}
 
 		if bRotate {
-			t.updateChildren(gp, repNode, isLeft)
+			t.updateChildren(parent, fixNode, isLeft)
 		}
 
-		repNode.height = repNode.max() + 1
-		repNode = repNode.parent
+		fixNode.height = fixNode.max() + 1
+		fixNode = fixNode.parent
 	}
 }
 
@@ -146,21 +138,23 @@ func (t *Tree) deleteNode(node *TreeNode) {
 
 	if hasLeft && hasRight {
 		// 删除节点有左右子节点
-		tmpNode := node
+		last := node
 
 		switch node.balanceFactor() {
 		case LEFT_1_HIGHER_THAN_RIGHT:
 			// 前驱节点只可能有右节点
 			node = node.findPrecursor()
 			hasRight = true
+			// hasLeft = false
 
 		default:
 			// 后继节点只可能有左节点
 			node = node.findSuccessor()
 			hasLeft = true
+			// hasRight = false
 		}
 
-		tmpNode.entry = node.entry
+		last.entry = node.entry
 	}
 
 	parent := node.parent
@@ -176,6 +170,7 @@ func (t *Tree) deleteNode(node *TreeNode) {
 	// 删除节点
 	node.free()
 	t.deleteFixUp(parent)
+	t.size--
 }
 
 // deleteFixUp 删除修复
@@ -192,27 +187,23 @@ func (t *Tree) deleteFixUp(node *TreeNode) {
 		}
 
 		switch node.balanceFactor() {
-		// 删除节点之后，左子树比右子树高2
 		case LEFT_2_HIGHER_THAN_RIGHT:
-			if node.left.right.high() > node.left.left.high() {
-				// 左节点的右子树比左子树高
-				node = node.leftRightRotate()
-			} else {
-				node = node.rightRotate()
-			}
+			// 删除节点之后，左子树比右子树高2
+			// 修复节点的左子树的左子树比右子树高，只需要旋转一次
+			// 修复节点的左子树的右子树比左子树高，需要旋转两次
+			bSingleRorate := node.left.right.high() < node.left.left.high()
+			node = t.caseLeft2HigherThanRight(node, bSingleRorate)
 
-		// 删除节点之后，右子树比左子树高2
 		case RIGHT_2_HIGHER_THAN_LEFT:
-			if node.right.left.high() > node.right.right.high() {
-				// 右节点的左子树比右子树高
-				node = node.rightLeftRotate()
-			} else {
-				node = node.leftRotate()
-			}
+			// 删除节点之后，右子树比左子树高2
+			// 修复节点的右子树的右子树比左子树高，只需要旋转一次
+			// 修复节点的右子树的左子树比右子树高，需要旋转两次
+			bSingleRorate := node.right.left.high() < node.right.right.high()
+			node = t.caseRight2HigherThanLeft(node, bSingleRorate)
 
-		// 删除节点之后，左右子树的高度差不为2，且高度没有发生变化，不需要修复
 		default:
 			if bHeightChange {
+				// 删除节点之后，左右子树的高度差不为2，且高度没有发生变化，不需要修复
 				return
 			}
 		}
@@ -493,4 +484,22 @@ func (t *Tree) updateChildren(parent, children *TreeNode, isLeft bool) {
 	} else {
 		parent.right = children
 	}
+}
+
+// caseLeft2HigherThanRight 左子树比右子树高2
+func (t *Tree) caseLeft2HigherThanRight(node *TreeNode, bSingleRorate bool) *TreeNode {
+	if bSingleRorate {
+		return node.rightRotate()
+	}
+
+	return node.leftRightRotate()
+}
+
+// caseRight2HigherThanLeft 右子树比左子树高2
+func (t *Tree) caseRight2HigherThanLeft(node *TreeNode, bSingleRorate bool) *TreeNode {
+	if bSingleRorate {
+		return node.leftRotate()
+	}
+
+	return node.rightLeftRotate()
 }
