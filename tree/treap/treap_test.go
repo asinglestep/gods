@@ -1,7 +1,6 @@
 package treap
 
 import (
-	"fmt"
 	"math/rand"
 	"testing"
 	"time"
@@ -28,7 +27,7 @@ func (tc treapComparator) Compare(k1, k2 interface{}) int {
 
 func Test_TreapRandInsert(t *testing.T) {
 	tree := NewTree(treapComparator{})
-	var num = 10000000
+	var num = 1000000
 
 	array := rand.New(rand.NewSource(time.Now().UnixNano())).Perm(num)
 	// array = []int{8, 4, 0, 6, 3, 9, 1, 5, 2, 7}
@@ -40,7 +39,11 @@ func Test_TreapRandInsert(t *testing.T) {
 	// fmt.Printf("\n随机插入%v个数\n", num)
 	// fmt.Printf("随机数组: %v\n", array)
 
-	fmt.Printf("\n插入结果是否正确: %v\n", tree.VerifTreap())
+	// fmt.Printf("\n插入结果是否正确: %v\n", tree.VerifTreap())
+
+	if !tree.VerifTreap() {
+		t.Fatal("Test_TreapRandInsert err")
+	}
 
 	// tree.Dot()
 	idx := 0
@@ -56,7 +59,7 @@ func Test_TreapRandInsert(t *testing.T) {
 
 func Test_TreapRandDelete(t *testing.T) {
 	tree := NewTree(treapComparator{})
-	var num = 10000000
+	var num = 1000000
 
 	array := rand.New(rand.NewSource(time.Now().UnixNano())).Perm(num)
 	// array = []int{8, 4, 0, 6, 3, 9, 1, 5, 2, 7}
@@ -73,8 +76,12 @@ func Test_TreapRandDelete(t *testing.T) {
 		tree.Delete(v)
 	}
 
-	fmt.Printf("\n删除结果是否正确: %v\n", tree.VerifTreap())
+	// fmt.Printf("\n删除结果是否正确: %v\n", tree.VerifTreap())
 	// tree.Dot()
+
+	if !tree.VerifTreap() {
+		t.Fatal("Test_TreapRandDelete err")
+	}
 
 	idx := num / 2
 	iter := NewIterator(tree)

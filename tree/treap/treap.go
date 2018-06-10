@@ -21,7 +21,7 @@ type Tree struct {
 // NewTree NewTree
 func NewTree(comparator utils.Comparator) *Tree {
 	t := &Tree{}
-	t.root = SentinelNode
+	t.root = Sentinel
 	t.seed = 1
 	t.comparator = comparator
 
@@ -76,13 +76,7 @@ func (t *Tree) insertFixUp(node *TreeNode) {
 			node.parent.leftRotate()
 		}
 
-		if grandfather == nil {
-			t.root = node
-		} else if isLeft {
-			grandfather.left = node
-		} else {
-			grandfather.right = node
-		}
+		t.updateChildren(grandfather, node, isLeft)
 	}
 }
 
@@ -107,7 +101,7 @@ func (t *Tree) Delete(key interface{}) {
 
 // deleteNode 删除节点
 func (t *Tree) deleteNode(node *TreeNode) {
-	var tmpNode *TreeNode
+	var children *TreeNode
 
 	for !node.left.isSentinel() || !node.right.isSentinel() {
 		parent := node.parent
@@ -115,33 +109,16 @@ func (t *Tree) deleteNode(node *TreeNode) {
 
 		if node.left.isSentinel() || (!node.right.isSentinel() && node.left.priority > node.right.priority) {
 			// 左节点为空 或者 左右节点都不为空，且左节点的优先级大于右节点的优先级
-			tmpNode = node.leftRotate()
+			children = node.leftRotate()
 		} else {
 			// 右节点为空 或者 左右节点都不为空，且右节点的优先级大于左节点的优先级
-			tmpNode = node.rightRotate()
+			children = node.rightRotate()
 		}
 
-		if parent == nil {
-			t.root = tmpNode
-		} else if isLeft {
-			parent.left = tmpNode
-		} else {
-			parent.right = tmpNode
-		}
+		t.updateChildren(parent, children, isLeft)
 	}
 
-	// 左右节点都为空，删除节点
-	if node.parent == nil {
-		// 删除节点为根节点
-		t.root = SentinelNode
-	} else if node.isLeft() {
-		// 删除节点为左节点
-		node.parent.left = SentinelNode
-	} else {
-		// 删除节点为右节点
-		node.parent.right = SentinelNode
-	}
-
+	t.updateChildren(node.parent, Sentinel, node.isLeft())
 	node.free()
 	t.size--
 }
@@ -164,6 +141,17 @@ func (t *Tree) Search(key interface{}) *TreeNode {
 	}
 
 	return nil
+}
+
+// updateChild 更新父节点的子节点
+func (t *Tree) updateChildren(parent, children *TreeNode, isLeft bool) {
+	if parent == nil {
+		t.root = children
+	} else if isLeft {
+		parent.left = children
+	} else {
+		parent.right = children
+	}
 }
 
 // minimum 中序遍历后，树的最小节点

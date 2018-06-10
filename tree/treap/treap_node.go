@@ -16,7 +16,8 @@ type TreeNode struct {
 	entry    *utils.Entry // 数据
 }
 
-var SentinelNode = &TreeNode{
+// Sentinel Sentinel
+var Sentinel = &TreeNode{
 	entry: nil,
 }
 
@@ -25,8 +26,8 @@ func NewTreeNode(entry *utils.Entry, priority uint32) *TreeNode {
 	node := &TreeNode{}
 	node.entry = entry
 	node.priority = priority
-	node.left = SentinelNode
-	node.right = SentinelNode
+	node.left = Sentinel
+	node.right = Sentinel
 
 	return node
 }
