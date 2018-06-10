@@ -189,16 +189,16 @@ func (t *Tree) deleteFixUp(node *TreeNode) {
 		switch node.balanceFactor() {
 		case LEFT_2_HIGHER_THAN_RIGHT:
 			// 删除节点之后，左子树比右子树高2
-			// 修复节点的左子树的左子树比右子树高，只需要旋转一次
+			// 修复节点的左子树的左子树比右子树高 或者 修复节点的左子树的左子树和右子树一样高，只需要旋转一次
 			// 修复节点的左子树的右子树比左子树高，需要旋转两次
-			bSingleRorate := node.left.right.high() < node.left.left.high()
+			bSingleRorate := node.left.right.high() <= node.left.left.high()
 			node = t.caseLeft2HigherThanRight(node, bSingleRorate)
 
 		case RIGHT_2_HIGHER_THAN_LEFT:
 			// 删除节点之后，右子树比左子树高2
-			// 修复节点的右子树的右子树比左子树高，只需要旋转一次
+			// 修复节点的右子树的右子树比左子树高 或者 修复节点的右子树的右子树和左子树一样高，只需要旋转一次
 			// 修复节点的右子树的左子树比右子树高，需要旋转两次
-			bSingleRorate := node.right.left.high() < node.right.right.high()
+			bSingleRorate := node.right.left.high() <= node.right.right.high()
 			node = t.caseRight2HigherThanLeft(node, bSingleRorate)
 
 		default:
