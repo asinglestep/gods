@@ -145,13 +145,13 @@ func (t *Tree) deleteNode(node *TreeNode) {
 			// 前驱节点只可能有右节点
 			node = node.findPrecursor()
 			hasRight = true
-			// hasLeft = false
+			hasLeft = false
 
 		default:
 			// 后继节点只可能有左节点
 			node = node.findSuccessor()
 			hasLeft = true
-			// hasRight = false
+			hasRight = false
 		}
 
 		last.entry = node.entry
