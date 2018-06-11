@@ -199,15 +199,70 @@ func (node *TreeNode) free() {
 	node.entry = nil
 }
 
-// reverse 倒序
-func reverse(list []*TreeNode) []*TreeNode {
-	listLen := len(list)
-
-	for i := 0; i < listLen/2; i++ {
-		list[i], list[listLen-i-1] = list[listLen-i-1], list[i]
+// minimum 以当前节点为根节点，中序遍历后，树的最小节点
+func (node *TreeNode) minimum() *TreeNode {
+	if node.isSentinel() {
+		return nil
 	}
 
-	return list
+	for !node.left.isSentinel() {
+		node = node.left
+	}
+
+	return node
+}
+
+// maximum 以当前节点为根节点，中序遍历后，树的最大节点
+func (node *TreeNode) maximum() *TreeNode {
+	if node.isSentinel() {
+		return nil
+	}
+
+	for !node.right.isSentinel() {
+		node = node.right
+	}
+
+	return node
+}
+
+// next 中序遍历node的下一个节点
+func (node *TreeNode) next() *TreeNode {
+	if node.isSentinel() {
+		return nil
+	}
+
+	// 在右子树中找最小的节点
+	if n := node.right.minimum(); n != nil {
+		return n
+	}
+
+	parent := node.parent
+	for parent != nil && node.isRight() {
+		node = parent
+		parent = node.parent
+	}
+
+	return parent
+}
+
+// prev 中序遍历node的上一个节点
+func (node *TreeNode) prev() *TreeNode {
+	if node.isSentinel() {
+		return nil
+	}
+
+	// 在左子树中找最大的节点
+	if n := node.left.maximum(); n != nil {
+		return n
+	}
+
+	parent := node.parent
+	for parent != nil && node.isLeft() {
+		node = parent
+		parent = node.parent
+	}
+
+	return parent
 }
 
 // dot dot
@@ -234,4 +289,15 @@ func (node *TreeNode) dot() (dNode *dot.Node, dEdge *dot.Edge) {
 	}
 
 	return dNode, dEdge
+}
+
+// reverse 倒序
+func reverse(list []*TreeNode) []*TreeNode {
+	listLen := len(list)
+
+	for i := 0; i < listLen/2; i++ {
+		list[i], list[listLen-i-1] = list[listLen-i-1], list[i]
+	}
+
+	return list
 }

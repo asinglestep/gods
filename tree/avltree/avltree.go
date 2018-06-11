@@ -144,14 +144,14 @@ func (t *Tree) deleteNode(node *TreeNode) {
 		case LEFT_1_HIGHER_THAN_RIGHT:
 			// 前驱节点只可能有右节点
 			node = node.findPrecursor()
-			hasRight = true
-			hasLeft = false
+			hasLeft = true
+			hasRight = false
 
 		default:
 			// 后继节点只可能有左节点
 			node = node.findSuccessor()
-			hasLeft = true
-			hasRight = false
+			hasRight = true
+			hasLeft = false
 		}
 
 		last.entry = node.entry
@@ -413,6 +413,11 @@ func (t *Tree) VerifAvlTree() bool {
 		}
 	}
 
+	if len(keys) != t.size {
+		fmt.Printf("len(keys) != t.size, len(keys) %v, t.size %v\n", len(keys), t.size)
+		return false
+	}
+
 	return true
 }
 
@@ -502,4 +507,14 @@ func (t *Tree) caseRight2HigherThanLeft(node *TreeNode, bSingleRorate bool) *Tre
 	}
 
 	return node.rightLeftRotate()
+}
+
+// minimum 中序遍历后，树的最小节点
+func (t *Tree) minimum() *TreeNode {
+	return t.root.minimum()
+}
+
+// maximum 中序遍历后，树的最大节点
+func (t *Tree) maximum() *TreeNode {
+	return t.root.maximum()
 }

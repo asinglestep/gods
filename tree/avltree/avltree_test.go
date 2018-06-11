@@ -78,6 +78,17 @@ func Test_AvlTreeInsert(t *testing.T) {
 	if !tree.VerifAvlTree() {
 		t.Fatal("Test_AvlTreeInsert err")
 	}
+
+	idx := 0
+	verifArr := []int{5, 10, 15, 18, 20, 40, 60, 70, 80}
+	iter := NewIterator(tree)
+	for iter.Next() {
+		if iter.GetKey().(int) != verifArr[idx] {
+			t.Fatalf("want %v, got %v\n", idx, iter.GetKey().(int))
+		}
+
+		idx++
+	}
 }
 
 func Test_AvlTreeRandInsert(t *testing.T) {
@@ -102,6 +113,15 @@ func Test_AvlTreeRandInsert(t *testing.T) {
 		t.Fatal("Test_AvlTreeRandInsert err")
 	}
 
+	idx := 0
+	iter := NewIterator(tree)
+	for iter.Next() {
+		if iter.GetKey().(int) != idx {
+			t.Fatalf("want %v, got %v\n", idx, iter.GetKey().(int))
+		}
+
+		idx++
+	}
 }
 
 func Test_AvlTreeDelete(t *testing.T) {
@@ -169,35 +189,39 @@ func Test_AvlTreeRandDelete(t *testing.T) {
 	var num = 1000000
 
 	array := rand.New(rand.NewSource(time.Now().UnixNano())).Perm(num)
-	// array = []int{1, 3, 2, 7, 5, 8, 4, 6, 9, 0}
+	// array = []int{5, 4, 2, 1, 6, 3, 9, 0, 8, 7}
+	// fmt.Printf("插入: %v\n", array)
 	for _, v := range array {
 		tree.Insert(v, v)
 	}
 
-	// if !tree.VerifAvlTree() {
-	// 	fmt.Printf("\n插入 - 测试结果是否正确: %v\n", array)
-	// } else {
-	// 	fmt.Println("插入正确")
-	// }
+	if !tree.VerifAvlTree() {
+		t.Fatalf("Test_AvlTreeRandDelete insert err, array %v\n", array)
+	}
 
 	// tree.PrintAvlTree()
 
 	dArray := rand.New(rand.NewSource(time.Now().UnixNano())).Perm(num / 2)
-	// dArray = []int{0, 3, 1, 4, 2}
-
+	// dArray = []int{2, 3, 4, 1, 0}
+	// fmt.Printf("删除: %v\n", dArray)
 	for _, v := range dArray {
-		tree.Delete(v)
 		// fmt.Printf("删除%v\n", v)
+		tree.Delete(v)
 		// tree.PrintAvlTree()
 	}
 
-	// if !tree.VerifAvlTree() {
-	// 	fmt.Printf("\n删除错误: iArray %v\ndArray %v\n", array, dArray)
-	// } else {
-	// 	fmt.Println("删除正确")
-	// }
 	if !tree.VerifAvlTree() {
-		t.Fatal("Test_AvlTreeRandDelete err")
+		t.Fatalf("Test_AvlTreeRandDelete delete err, array %v\n", dArray)
+	}
+
+	idx := num / 2
+	iter := NewIterator(tree)
+	for iter.Next() {
+		if iter.GetKey().(int) != idx {
+			t.Fatalf("want %v, got %v\n", idx, iter.GetKey().(int))
+		}
+
+		idx++
 	}
 }
 
