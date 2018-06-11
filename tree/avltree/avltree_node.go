@@ -4,69 +4,51 @@ import (
 	"fmt"
 
 	dot "github.com/asinglestep/godot"
+	"github.com/asinglestep/gods/utils"
 )
-
-// Key Key
-type Key int32
-
-// less less
-// k < key, 返回true
-func (k Key) less(key Key) bool {
-	if k < key {
-		return true
-	}
-
-	return false
-}
-
-// more more
-// k > key, 返回true
-func (k Key) more(key Key) bool {
-	if k > key {
-		return true
-	}
-
-	return false
-}
-
-// equal equal
-// k = key, 返回true
-func (k Key) equal(key Key) bool {
-	if k == key {
-		return true
-	}
-
-	return false
-}
 
 // TreeNode avl节点
 type TreeNode struct {
-	height int32     // 树得高度
-	key    Key       // key
-	right  *TreeNode // 右子节点
-	left   *TreeNode // 左子节点
-	parent *TreeNode // 父节点
+	height int32        // 树得高度
+	entry  *utils.Entry // 数据
+	right  *TreeNode    // 右子节点
+	left   *TreeNode    // 左子节点
+	parent *TreeNode    // 父节点
+}
+
+var Sentinel = &TreeNode{
+	entry: nil,
 }
 
 // NewTreeNode 新建一个节点
-func NewTreeNode(key Key) *TreeNode {
+func NewTreeNode(entry *utils.Entry) *TreeNode {
 	node := &TreeNode{
-		key:    key,
+		entry:  entry,
 		height: 1,
-		right:  NewSentinel(),
-		left:   NewSentinel(),
+		right:  Sentinel,
+		left:   Sentinel,
 	}
 
 	return node
 }
 
-// NewSentinel NewSentinel
-func NewSentinel() *TreeNode {
-	n := &TreeNode{
-		key: -1,
-	}
+// // NewSentinel NewSentinel
+// func NewSentinel() *TreeNode {
+// 	n := &TreeNode{
+// 		entry: nil,
+// 	}
 
-	return n
+// 	return n
+// }
+
+// GetKey 获取key
+func (node *TreeNode) GetKey() interface{} {
+	return node.entry.GetKey()
+}
+
+// GetValue 获取value
+func (node *TreeNode) GetValue() interface{} {
+	return node.entry.GetValue()
 }
 
 // rightRotate 右旋
@@ -74,12 +56,11 @@ func (node *TreeNode) rightRotate() *TreeNode {
 	l := node.left
 	lr := l.right
 
-	node.left = lr
 	l.right = node
-
 	l.parent = node.parent
-	node.parent = l
 
+	node.left = lr
+	node.parent = l
 	node.height = node.max() + 1
 
 	if !lr.isSentinel() {
@@ -94,12 +75,11 @@ func (node *TreeNode) leftRotate() *TreeNode {
 	r := node.right
 	rl := r.left
 
-	node.right = rl
 	r.left = node
-
 	r.parent = node.parent
-	node.parent = r
 
+	node.right = rl
+	node.parent = r
 	node.height = node.max() + 1
 
 	if !rl.isSentinel() {
@@ -192,7 +172,7 @@ func (node *TreeNode) max() int32 {
 
 // isSentinel 是否是哨兵节点
 func (node *TreeNode) isSentinel() bool {
-	return node.key == -1
+	return node.entry == nil
 }
 
 // isLeft 是否是左节点
@@ -215,6 +195,106 @@ func (node *TreeNode) isRight() bool {
 	return node == node.parent.right
 }
 
+// free free
+func (node *TreeNode) free() {
+	node.parent = nil
+	node.left = nil
+	node.right = nil
+	node.entry = nil
+}
+
+// minimum 以当前节点为根节点，中序遍历后，树的最小节点
+func (node *TreeNode) minimum() *TreeNode {
+	if node.isSentinel() {
+		return nil
+	}
+
+	for !node.left.isSentinel() {
+		node = node.left
+	}
+
+	return node
+}
+
+// maximum 以当前节点为根节点，中序遍历后，树的最大节点
+func (node *TreeNode) maximum() *TreeNode {
+	if node.isSentinel() {
+		return nil
+	}
+
+	for !node.right.isSentinel() {
+		node = node.right
+	}
+
+	return node
+}
+
+// next 中序遍历node的下一个节点
+func (node *TreeNode) next() *TreeNode {
+	if node.isSentinel() {
+		return nil
+	}
+
+	// 在右子树中找最小的节点
+	if n := node.right.minimum(); n != nil {
+		return n
+	}
+
+	parent := node.parent
+	for parent != nil && node.isRight() {
+		node = parent
+		parent = node.parent
+	}
+
+	return parent
+}
+
+// prev 中序遍历node的上一个节点
+func (node *TreeNode) prev() *TreeNode {
+	if node.isSentinel() {
+		return nil
+	}
+
+	// 在左子树中找最大的节点
+	if n := node.left.maximum(); n != nil {
+		return n
+	}
+
+	parent := node.parent
+	for parent != nil && node.isLeft() {
+		node = parent
+		parent = node.parent
+	}
+
+	return parent
+}
+
+// dot dot
+func (node *TreeNode) dot() (dNode *dot.Node, dEdge *dot.Edge) {
+	// 添加node
+	dNode = &dot.Node{}
+	dNode.Name = fmt.Sprintf("%d", node.GetKey())
+	dNode.Attr = map[string]string{
+		"label": fmt.Sprintf("\"<f0> | %d | <f1> \"", node.GetKey()),
+	}
+
+	// 添加edge
+	if node.parent != nil {
+		dEdge = &dot.Edge{}
+		dEdge.Src = fmt.Sprintf("%d", node.parent.GetKey())
+
+		if node.isLeft() {
+			dEdge.SrcPort = ":f0"
+		} else {
+			dEdge.SrcPort = ":f1"
+		}
+
+		dEdge.Dst = fmt.Sprintf("%d", node.GetKey())
+	}
+
+	return dNode, dEdge
+}
+
 // reverse 倒序
 func reverse(list []*TreeNode) []*TreeNode {
 	listLen := len(list)
@@ -224,30 +304,4 @@ func reverse(list []*TreeNode) []*TreeNode {
 	}
 
 	return list
-}
-
-// dot dot
-func (node *TreeNode) dot() (dNode *dot.Node, dEdge *dot.Edge) {
-	// 添加node
-	dNode = &dot.Node{}
-	dNode.Name = fmt.Sprintf("%d", node.key)
-	dNode.Attr = map[string]string{
-		"label": fmt.Sprintf("\"<f0> | %d | <f1> \"", node.key),
-	}
-
-	// 添加edge
-	if node.parent != nil {
-		dEdge = &dot.Edge{}
-		dEdge.Src = fmt.Sprintf("%d", node.parent.key)
-
-		if node.isLeft() {
-			dEdge.SrcPort = ":f0"
-		} else {
-			dEdge.SrcPort = ":f1"
-		}
-
-		dEdge.Dst = fmt.Sprintf("%d", node.key)
-	}
-
-	return dNode, dEdge
 }
