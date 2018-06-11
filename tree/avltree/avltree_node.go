@@ -32,15 +32,6 @@ func NewTreeNode(entry *utils.Entry) *TreeNode {
 	return node
 }
 
-// // NewSentinel NewSentinel
-// func NewSentinel() *TreeNode {
-// 	n := &TreeNode{
-// 		entry: nil,
-// 	}
-
-// 	return n
-// }
-
 // GetKey 获取key
 func (node *TreeNode) GetKey() interface{} {
 	return node.entry.GetKey()
