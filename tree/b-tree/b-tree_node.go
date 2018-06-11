@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	dot "github.com/asinglestep/godot"
+	"github.com/asinglestep/gods/utils"
 )
 
 // Key Key
@@ -55,9 +56,9 @@ func (e *Entry) String() string {
 
 // TreeNode TreeNode
 type TreeNode struct {
-	parent    *TreeNode   // 父节点
-	childrens []*TreeNode // 子节点
-	entries   []*Entry    // 节点数据
+	parent    *TreeNode      // 父节点
+	childrens []*TreeNode    // 子节点
+	entries   []*utils.Entry // 节点数据
 
 	iOffset int  // 偏移量
 	bHandle bool // true: 第一次处理这个节点
@@ -72,12 +73,12 @@ func NewLeafNode() *TreeNode {
 }
 
 // findKeyPosition 在节点中查找第一个大于等于key的位置，没有比key大的节点，则返回此节点最后一个key
-func (node *TreeNode) findKeyPosition(key Key) int {
+func (node *TreeNode) findKeyPosition(comparator utils.Comparator, key interface{}) int {
 	i, j := 0, len(node.entries)
 
 	for i < j {
 		h := int(uint(i+j) >> 1)
-		if node.entries[h].Key.less(key) {
+		if comparator.Compare(node.entries[h].GetKey(), key) == utils.Lt {
 			i = h + 1
 		} else {
 			j = h

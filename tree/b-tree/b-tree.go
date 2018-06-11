@@ -7,38 +7,41 @@ import (
 	"runtime"
 
 	dot "github.com/asinglestep/godot"
+	"github.com/asinglestep/gods/utils"
 )
 
 // Tree Tree
 type Tree struct {
-	root *TreeNode // 指向根结点
-
-	maxEntryN int // 每个节点最多有多少个entry
-	minEntryN int // 非根节点最少有多少个entry
+	root       *TreeNode // 指向根结点
+	comparator utils.Comparator
+	size       int // 节点数
+	maxEntry   int // 每个节点最多有多少个entry
+	minEntry   int // 非根节点最少有多少个entry
 }
 
 // NewTree 新建b树
 //
 // 参数
 // t: 度数
-func NewTree(t int) *Tree {
+func NewTree(t int, comparator utils.Comparator) *Tree {
 	tree := &Tree{}
-	tree.maxEntryN = 2*t - 1
-	tree.minEntryN = t - 1
+	tree.maxEntry = 2*t - 1
+	tree.minEntry = t - 1
 	tree.root = NewLeafNode()
+	tree.comparator = comparator
 
 	return tree
 }
 
 // Insert 插入
-func (t *Tree) Insert(entry *Entry) {
+func (t *Tree) Insert(key, val interface{}) {
 	keyPos := 0
 	tmpNode := t.root
 
 	// 找到key插入的叶子节点
 	for {
 		left, right, midEntry := t.splitNode(tmpNode)
-		if right != nil && midEntry.Key.less(entry.Key) {
+		if right != nil && t.comparator.Compare(midEntry.Key, key) == utils.Lt {
 			// 分裂后，中间的key比key小，继续在右节点中查找
 			tmpNode = right
 		} else {
@@ -83,7 +86,36 @@ func (t *Tree) Delete(key Key) {
 }
 
 // deleteNode deleteNode
-func (t *Tree) deleteNode(key Key) (fixNode *TreeNode, entry *Entry) {
+func (t *Tree) deleteNode(key interface{}) (fixNode *TreeNode, entry *utils.Entry) {
+	node, pos := t.lookup(key)
+	if node == nil {
+		return nil, nil
+	}
+
+	if node.isLeaf() {
+		// 是叶子节点直接删除
+		entry = node.entries[pos]
+		node.entries = append(node.entries[:pos], node.entries[pos+1:]...)
+		return node, entry
+	}
+
+	// 找到当前节点的前驱或者后继节点，删除后继或者前驱节点
+	switch {
+	// 右节点至少有t个关键字，找到后继节点，用后继节点的key替换key
+	case len(tmpNode.childrens[pos+1].entries) > t.minEntryN:
+		ssNode := tmpNode.findSuccessor(pos)
+		key = ssNode.entries[0].Key
+		tmpNode.entries[pos] = ssNode.entries[0]
+		tmpNode = ssNode
+
+	// 找到前驱节点，用前驱节点的key替换key
+	default:
+		preNode := tmpNode.findPrecursor(pos)
+		key = preNode.entries[len(preNode.entries)-1].Key
+		tmpNode.entries[pos] = preNode.entries[len(preNode.entries)-1]
+		tmpNode = preNode
+	}
+
 	tmpNode := t.root
 
 	for {
@@ -109,7 +141,7 @@ func (t *Tree) deleteNode(key Key) (fixNode *TreeNode, entry *Entry) {
 
 			// 找到当前节点的前驱或者后继节点，删除后继或者前驱节点
 			switch {
-			// 右节点至少有t个关键字，找到前驱节点，找到后继节点，用后继节点的key替换key
+			// 右节点至少有t个关键字，找到后继节点，用后继节点的key替换key
 			case len(tmpNode.childrens[pos+1].entries) > t.minEntryN:
 				ssNode := tmpNode.findSuccessor(pos)
 				key = ssNode.entries[0].Key
@@ -168,24 +200,13 @@ func (t *Tree) deleteFixUp(node *TreeNode, key Key) {
 }
 
 // Search 查找指定的key对应的Entry
-func (t *Tree) Search(key Key) *Entry {
-	node := t.root
-
-	for {
-		pos := node.findKeyPosition(key)
-		switch {
-		case pos == len(node.entries) || node.entries[pos].Key.more(key):
-			// 如果是叶子节点，退出
-			if node.isLeaf() {
-				return nil
-			}
-
-			node = node.childrens[pos]
-
-		default:
-			return node.entries[pos]
-		}
+func (t *Tree) Search(key interface{}) *Entry {
+	node, pos := t.lookup(key)
+	if node == nil {
+		return nil
 	}
+
+	return node.entries[pos]
 }
 
 // SearchRange 查找key在[min, max]之间的Entry
@@ -509,6 +530,30 @@ func (t *Tree) splitNode(node *TreeNode) (left *TreeNode, right *TreeNode, midEn
 
 	parent.childrens = newCs
 	return node, right, midEntry
+}
+
+// lookup 查找key所在的节点
+//
+// 返回值
+// node: key所在的节点
+// pos: key在节点中的位置
+func (t *Tree) lookup(key interface{}) (node *TreeNode, pos int) {
+	node = t.root
+
+	for {
+		pos = node.findKeyPosition(t.comparator, key)
+		if pos != len(node.entries) && t.comparator.Compare(node.entries[pos].GetKey(), key) == utils.Et {
+			// 找到了
+			return node, pos
+		}
+
+		if node.isLeaf() {
+			// 如果是叶子节点，退出
+			return nil, -1
+		}
+
+		node = node.childrens[pos]
+	}
 }
 
 // VerifBTree 验证是否是一个b树
