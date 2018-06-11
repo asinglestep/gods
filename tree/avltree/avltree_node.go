@@ -16,26 +16,30 @@ type TreeNode struct {
 	parent *TreeNode    // 父节点
 }
 
+var Sentinel = &TreeNode{
+	entry: nil,
+}
+
 // NewTreeNode 新建一个节点
 func NewTreeNode(entry *utils.Entry) *TreeNode {
 	node := &TreeNode{
 		entry:  entry,
 		height: 1,
-		right:  NewSentinel(),
-		left:   NewSentinel(),
+		right:  Sentinel,
+		left:   Sentinel,
 	}
 
 	return node
 }
 
-// NewSentinel NewSentinel
-func NewSentinel() *TreeNode {
-	n := &TreeNode{
-		entry: nil,
-	}
+// // NewSentinel NewSentinel
+// func NewSentinel() *TreeNode {
+// 	n := &TreeNode{
+// 		entry: nil,
+// 	}
 
-	return n
-}
+// 	return n
+// }
 
 // GetKey 获取key
 func (node *TreeNode) GetKey() interface{} {

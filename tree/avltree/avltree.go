@@ -28,7 +28,7 @@ type Tree struct {
 // NewTree 创建一个avl树
 func NewTree(comparator utils.Comparator) *Tree {
 	t := &Tree{}
-	t.root = NewSentinel()
+	t.root = Sentinel
 	t.comparator = comparator
 
 	return t
@@ -142,13 +142,13 @@ func (t *Tree) deleteNode(node *TreeNode) {
 
 		switch node.balanceFactor() {
 		case LEFT_1_HIGHER_THAN_RIGHT:
-			// 前驱节点只可能有右节点
+			// 前驱节点只可能有左节点
 			node = node.findPrecursor()
 			hasLeft = true
 			hasRight = false
 
 		default:
-			// 后继节点只可能有左节点
+			// 后继节点只可能有右节点
 			node = node.findSuccessor()
 			hasRight = true
 			hasLeft = false
