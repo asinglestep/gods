@@ -21,8 +21,9 @@ type Tree struct {
 
 // NewTree 新建b树
 //
-// 参数
+// @param
 // t: 度数
+// comparator: 比较器
 func NewTree(t int, comparator utils.Comparator) *Tree {
 	tree := &Tree{}
 	tree.maxEntry = 2*t - 1
@@ -76,119 +77,65 @@ func (t *Tree) Insert(key, val interface{}) {
 }
 
 // Delete 删除
-func (t *Tree) Delete(key Key) {
-	node, entry := t.deleteNode(key)
-	if node == nil {
-		return
-	}
-
-	t.deleteFixUp(node, entry.Key)
+func (t *Tree) Delete(key interface{}) {
+	t.deleteNode(key)
 }
 
 // deleteNode deleteNode
-func (t *Tree) deleteNode(key interface{}) (fixNode *TreeNode, entry *utils.Entry) {
-	node, pos := t.lookup(key)
-	if node == nil {
-		return nil, nil
-	}
-
-	if node.isLeaf() {
-		// 是叶子节点直接删除
-		entry = node.entries[pos]
-		node.entries = append(node.entries[:pos], node.entries[pos+1:]...)
-		return node, entry
-	}
-
-	// 找到当前节点的前驱或者后继节点，删除后继或者前驱节点
-	switch {
-	// 右节点至少有t个关键字，找到后继节点，用后继节点的key替换key
-	case len(tmpNode.childrens[pos+1].entries) > t.minEntryN:
-		ssNode := tmpNode.findSuccessor(pos)
-		key = ssNode.entries[0].Key
-		tmpNode.entries[pos] = ssNode.entries[0]
-		tmpNode = ssNode
-
-	// 找到前驱节点，用前驱节点的key替换key
-	default:
-		preNode := tmpNode.findPrecursor(pos)
-		key = preNode.entries[len(preNode.entries)-1].Key
-		tmpNode.entries[pos] = preNode.entries[len(preNode.entries)-1]
-		tmpNode = preNode
-	}
-
-	tmpNode := t.root
+func (t *Tree) deleteNode(key interface{}) {
+	pos := 0
+	var node = t.root
 
 	for {
-		pos := tmpNode.findKeyPosition(key)
-		switch {
-		// 当前node的所有key都小于要查找的key 或者 查找的key在tmpNode.keys[pos]的左边
-		case pos == len(tmpNode.entries) || tmpNode.entries[pos].Key.more(key):
-			if tmpNode.isLeaf() {
-				// 没有找到删除的key
-				return nil, nil
-			}
+		node, pos = t.lookup(node, key)
+		if node == nil {
+			return
+		}
 
-			tmpNode = tmpNode.childrens[pos]
-
-		// 找到要删除的节点
-		default:
+		if node.isLeaf() {
 			// 是叶子节点直接删除
-			if tmpNode.isLeaf() {
-				entry = tmpNode.entries[pos]
-				tmpNode.entries = append(tmpNode.entries[:pos], tmpNode.entries[pos+1:]...)
-				return tmpNode, entry
-			}
+			entry := node.entries[pos]
+			node.entries = append(node.entries[:pos], node.entries[pos+1:]...)
+			t.deleteFixUp(node, entry.GetKey())
+			return
+		}
 
-			// 找到当前节点的前驱或者后继节点，删除后继或者前驱节点
-			switch {
+		// 找到当前节点的前驱或者后继节点，删除后继或者前驱节点
+		if len(node.childrens[pos+1].entries) > t.minEntry {
 			// 右节点至少有t个关键字，找到后继节点，用后继节点的key替换key
-			case len(tmpNode.childrens[pos+1].entries) > t.minEntryN:
-				ssNode := tmpNode.findSuccessor(pos)
-				key = ssNode.entries[0].Key
-				tmpNode.entries[pos] = ssNode.entries[0]
-				tmpNode = ssNode
-
+			ssNode := node.findSuccessor(pos)
+			key = ssNode.entries[0].GetKey()
+			node.entries[pos] = ssNode.entries[0]
+			node = ssNode
+		} else {
 			// 找到前驱节点，用前驱节点的key替换key
-			default:
-				preNode := tmpNode.findPrecursor(pos)
-				key = preNode.entries[len(preNode.entries)-1].Key
-				tmpNode.entries[pos] = preNode.entries[len(preNode.entries)-1]
-				tmpNode = preNode
-			}
+			preNode := node.findPrecursor(pos)
+			key = preNode.entries[len(preNode.entries)-1].GetKey()
+			node.entries[pos] = preNode.entries[len(preNode.entries)-1]
+			node = preNode
 		}
 	}
 }
 
 // deleteFixUp 删除修复
-func (t *Tree) deleteFixUp(node *TreeNode, key Key) {
+func (t *Tree) deleteFixUp(node *TreeNode, key interface{}) {
 	for {
 		parent := node.parent
 		if parent == nil {
-			if len(node.entries) == 0 {
-				if node.isLeaf() {
-					// 删除之后，变成一个空树
-					t.root = node
-				} else {
-					// 合并时，将根节点唯一的key合并到子节点中，需要修改t.root的指向
-					t.root = node.childrens[0]
-					node.childrens[0].parent = nil
-				}
-			}
-
+			t.dCaseRoot(node)
 			return
 		}
 
-		if len(node.entries) >= t.minEntryN {
+		if len(node.entries) >= t.minEntry {
 			// 节点至少有t-1个关键字，不需要修复
 			return
 		}
 
 		// 找到相邻节点
 		bNode, pEntry, pos, bBig := t.getAdjacentNode(parent, key)
-		if len(bNode.entries) > t.minEntryN {
+		if len(bNode.entries) > t.minEntry {
 			// 相邻节点至少有t个关键字
-			entry := t.moveKey(parent, node, bNode, pEntry, pos, bBig)
-			key = entry.Key
+			t.moveKey(parent, node, bNode, pEntry, pos, bBig)
 			return
 		}
 
@@ -200,8 +147,8 @@ func (t *Tree) deleteFixUp(node *TreeNode, key Key) {
 }
 
 // Search 查找指定的key对应的Entry
-func (t *Tree) Search(key interface{}) *Entry {
-	node, pos := t.lookup(key)
+func (t *Tree) Search(key interface{}) *utils.Entry {
+	node, pos := t.lookup(t.root, key)
 	if node == nil {
 		return nil
 	}
@@ -271,16 +218,16 @@ func (t *Tree) SearchRange(min Key, max Key) []*Entry {
 
 // getAdjacentNode 找到key所在节点的相邻节点
 //
-// 参数
+// @param
 // parent: key所在节点的父节点
 // key: key
 //
-// 返回值
+// @return
 // bNode: 相邻节点
 // pEntry: 父节点中和node、node相邻节点相关联的entry
 // pos: 父节点中第一个大于等于key的位置
 // bBig: true - 相邻节点在右侧，false - 相邻节点在左侧
-func (t *Tree) getAdjacentNode(parent *TreeNode, key Key) (bNode *TreeNode, pEntry *Entry, pos int, bBig bool) {
+func (t *Tree) getAdjacentNode(parent *TreeNode, key interface{}) (bNode *TreeNode, pEntry *Entry, pos int, bBig bool) {
 	pos = parent.findKeyPosition(key)
 	switch pos {
 	case 0:
@@ -444,10 +391,10 @@ func (t *Tree) mergeNode(parent *TreeNode, node *TreeNode, bNode *TreeNode, pEnt
 
 // splitNode 分裂节点
 //
-// 参数
+// @param
 // node: 要分裂的节点
 //
-// 返回值
+// @return
 // left: 分裂之后的左节点
 // right: 分裂之后的右节点
 // midEntry: 中间的entry
@@ -534,11 +481,15 @@ func (t *Tree) splitNode(node *TreeNode) (left *TreeNode, right *TreeNode, midEn
 
 // lookup 查找key所在的节点
 //
-// 返回值
+// @param
+// sNode: 从sNode开始查找
+// key: 要查找的key
+//
+// @return
 // node: key所在的节点
 // pos: key在节点中的位置
-func (t *Tree) lookup(key interface{}) (node *TreeNode, pos int) {
-	node = t.root
+func (t *Tree) lookup(sNode *TreeNode, key interface{}) (node *TreeNode, pos int) {
+	node = sNode
 
 	for {
 		pos = node.findKeyPosition(t.comparator, key)
@@ -553,6 +504,23 @@ func (t *Tree) lookup(key interface{}) (node *TreeNode, pos int) {
 		}
 
 		node = node.childrens[pos]
+	}
+}
+
+// dCaseRoot 删除修复 - 修复根节点
+func (t *Tree) dCaseRoot(node *TreeNode) {
+	if len(node.entries) != 0 {
+		return
+	}
+
+	if node.isLeaf() {
+		// 删除之后，变成一个空树
+		t.root = node
+	} else {
+		// 合并时，将根节点唯一的key合并到子节点中
+		// 需要修改t.root的指向
+		t.root = node.childrens[0]
+		node.childrens[0].parent = nil
 	}
 }
 
