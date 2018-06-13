@@ -439,7 +439,6 @@ func (t *Tree) splitNode(node *TreeNode) (left *TreeNode, right *TreeNode, midEn
 
 // splitRootNode 分裂根节点
 func (t *Tree) splitRootNode(node *TreeNode) *TreeNode {
-	// 根节点为满的
 	parent := &TreeNode{}
 	parent.childrens = make([]*TreeNode, 1)
 	parent.childrens[0] = node

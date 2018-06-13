@@ -31,10 +31,11 @@ func (tc btreeComparator) Compare(k1, k2 interface{}) int {
 	return 0
 }
 
+const DEGREE = 10
+
 // Insert Test
 func Test_BTreeRandInsert(t *testing.T) {
-	//  至少有1个关键字，至多有3个关键字
-	tree := NewTree(2, btreeComparator{})
+	tree := NewTree(DEGREE, btreeComparator{})
 	var num = 1000000
 
 	array := rand.New(rand.NewSource(time.Now().UnixNano())).Perm(num)
@@ -58,7 +59,7 @@ func Test_BatchBTreeRandInsert(t *testing.T) {
 	count := 1000
 
 	for i := 0; i < count; i++ {
-		tree := NewTree(2, btreeComparator{})
+		tree := NewTree(DEGREE, btreeComparator{})
 		var num = 100
 
 		array := rand.New(rand.NewSource(time.Now().UnixNano())).Perm(num)
@@ -75,7 +76,7 @@ func Test_BatchBTreeRandInsert(t *testing.T) {
 
 // Delete Test
 func Test_BTreeDelete(t *testing.T) {
-	tree := NewTree(2, btreeComparator{})
+	tree := NewTree(DEGREE, btreeComparator{})
 	array := []int{0, 1, 5, 2, 3, 6, 4, 7, 9, 8}
 
 	for _, v := range array {
@@ -126,7 +127,7 @@ func Test_BTreeDelete(t *testing.T) {
 }
 
 func Test_BTreeRandDelete(t *testing.T) {
-	tree := NewTree(2, btreeComparator{})
+	tree := NewTree(DEGREE, btreeComparator{})
 	var num = 1000000
 
 	insertArray := rand.New(rand.NewSource(time.Now().UnixNano())).Perm(num)
@@ -154,7 +155,7 @@ func Test_BatchBTreeRandDelete(t *testing.T) {
 	count := 1000
 
 	for i := 0; i < count; i++ {
-		tree := NewTree(2, btreeComparator{})
+		tree := NewTree(DEGREE, btreeComparator{})
 		var num = 100
 
 		insertArray := rand.New(rand.NewSource(time.Now().UnixNano())).Perm(num)
@@ -178,7 +179,7 @@ func Test_BatchBTreeRandDelete(t *testing.T) {
 }
 
 func Test_BTreeSearch(t *testing.T) {
-	tree := NewTree(2, btreeComparator{})
+	tree := NewTree(DEGREE, btreeComparator{})
 	var num = 1000000
 
 	insertArray := rand.New(rand.NewSource(time.Now().UnixNano())).Perm(num)
@@ -198,7 +199,7 @@ func Test_BTreeSearch(t *testing.T) {
 }
 
 func Test_BTreeeRangeSearch(t *testing.T) {
-	tree := NewTree(2, btreeComparator{})
+	tree := NewTree(DEGREE, btreeComparator{})
 	var num = 1000000
 
 	insertArray := rand.New(rand.NewSource(time.Now().UnixNano())).Perm(num)
