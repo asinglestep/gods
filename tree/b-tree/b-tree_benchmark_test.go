@@ -7,7 +7,7 @@ import (
 )
 
 func Benchmark_BTreeRandInsert(b *testing.B) {
-	tree := NewTree(2)
+	tree := NewTree(2, btreeComparator{})
 	var num = 10000000
 
 	array := rand.New(rand.NewSource(time.Now().UnixNano())).Perm(num)
@@ -15,35 +15,35 @@ func Benchmark_BTreeRandInsert(b *testing.B) {
 	// array = []int{8, 6, 7, 0, 9, 3, 5, 4, 2, 1}
 
 	for _, v := range array {
-		tree.Insert(NewEntry(Key(v), Value(v)))
+		tree.Insert(v, v)
 	}
 }
 
 func Benchmark_BTreeRandDelete(b *testing.B) {
-	tree := NewTree(2)
+	tree := NewTree(2, btreeComparator{})
 	var num = 10000000
 
 	iArray := rand.New(rand.NewSource(time.Now().UnixNano())).Perm(num)
 	for _, v := range iArray {
-		tree.Insert(NewEntry(Key(v), Value(v)))
+		tree.Insert(v, v)
 	}
 
 	dArray := rand.New(rand.NewSource(time.Now().UnixNano())).Perm(num / 2)
 	for _, v := range dArray {
-		tree.Delete(Key(v))
+		tree.Delete(v)
 	}
 }
 
 func Benchmark_BTreeRangeSearch(b *testing.B) {
-	tree := NewTree(2)
+	tree := NewTree(2, btreeComparator{})
 	var num = 10000000
 
 	insertArray := rand.New(rand.NewSource(time.Now().UnixNano())).Perm(num)
 	for _, v := range insertArray {
-		tree.Insert(NewEntry(Key(v), Value(v)))
+		tree.Insert(v, v)
 	}
 
-	minKey := Key(rand.New(rand.NewSource(time.Now().UnixNano())).Intn(num))
+	minKey := rand.New(rand.NewSource(time.Now().UnixNano())).Intn(num)
 	maxKey := minKey + 1000
 	tree.SearchRange(minKey, maxKey)
 }
