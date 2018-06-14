@@ -46,13 +46,24 @@ func Test_BTreeRandInsert(t *testing.T) {
 	}
 
 	if !tree.VerifBTree() {
-		t.Fatal("Test_BTreeRandInsert err")
+		t.Fatalf("插入 - 验证b树错误: 数组 %v\n", array)
 	}
 
 	// tree.PrintBTree()
 	// if err := tree.Dot(); err != nil {
 	// 	fmt.Printf("Dot error %v\n", err)
 	// }
+	// fmt.Println(tree.size)
+
+	idx := 0
+	iter := NewIterator(tree)
+	for iter.Next() {
+		if iter.GetKey().(int) != idx {
+			t.Fatalf("Test_BTreeRandInsert err")
+		}
+
+		idx++
+	}
 }
 
 func Test_BatchBTreeRandInsert(t *testing.T) {
@@ -149,6 +160,16 @@ func Test_BTreeRandDelete(t *testing.T) {
 	}
 
 	// tree.PrintBTree()
+
+	idx := num / 2
+	iter := NewIterator(tree)
+	for iter.Next() {
+		if iter.GetKey().(int) != idx {
+			t.Fatalf("Test_BTreeRandDelete err")
+		}
+
+		idx++
+	}
 }
 
 func Test_BatchBTreeRandDelete(t *testing.T) {

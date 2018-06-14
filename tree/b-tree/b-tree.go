@@ -492,6 +492,11 @@ func (t *Tree) dCaseRoot(node *TreeNode) {
 	}
 }
 
+// minimum 中序遍历后，树的最小节点
+func (t *Tree) minimum() *TreeNode {
+	return t.root.minimum()
+}
+
 // VerifBTree 验证是否是一个b树
 func (t *Tree) VerifBTree() bool {
 	entires := make([]*utils.Entry, 0)

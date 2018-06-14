@@ -7,7 +7,7 @@ import (
 )
 
 func Benchmark_BTreeRandInsert(b *testing.B) {
-	tree := NewTree(2, btreeComparator{})
+	tree := NewTree(DEGREE, btreeComparator{})
 	var num = 10000000
 
 	array := rand.New(rand.NewSource(time.Now().UnixNano())).Perm(num)
@@ -20,7 +20,7 @@ func Benchmark_BTreeRandInsert(b *testing.B) {
 }
 
 func Benchmark_BTreeRandDelete(b *testing.B) {
-	tree := NewTree(2, btreeComparator{})
+	tree := NewTree(DEGREE, btreeComparator{})
 	var num = 10000000
 
 	iArray := rand.New(rand.NewSource(time.Now().UnixNano())).Perm(num)
@@ -35,7 +35,7 @@ func Benchmark_BTreeRandDelete(b *testing.B) {
 }
 
 func Benchmark_BTreeRangeSearch(b *testing.B) {
-	tree := NewTree(2, btreeComparator{})
+	tree := NewTree(DEGREE, btreeComparator{})
 	var num = 10000000
 
 	insertArray := rand.New(rand.NewSource(time.Now().UnixNano())).Perm(num)

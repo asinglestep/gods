@@ -104,6 +104,31 @@ func (node *TreeNode) free() {
 	node.entries = nil
 }
 
+// minimum 以当前节点为根节点，中序遍历后，树的最小节点
+func (node *TreeNode) minimum() *TreeNode {
+	for !node.isLeaf() {
+		node = node.childrens[0]
+	}
+
+	return node
+}
+
+// maximum 以当前节点为根节点，中序遍历后，树的最大节点
+func (node *TreeNode) maximum() *TreeNode {
+	for !node.isLeaf() {
+		node = node.childrens[len(node.childrens)-1]
+	}
+
+	return node
+}
+
+// // next 中序遍历node的下一个节点
+// func (node *TreeNode) next() bool {
+// 	if condition {
+
+// 	}
+// }
+
 // printBTreeNode printBTreeNode
 func (node *TreeNode) printBTreeNode() {
 	if node.parent != nil {
