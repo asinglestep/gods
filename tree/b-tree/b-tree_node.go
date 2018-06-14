@@ -13,9 +13,6 @@ type TreeNode struct {
 	parent    *TreeNode      // 父节点
 	childrens []*TreeNode    // 子节点
 	entries   []*utils.Entry // 节点数据
-
-	iOffset int  // 偏移量
-	bHandle bool // true: 第一次处理这个节点
 }
 
 // NewLeafNode 叶子节点
@@ -122,30 +119,25 @@ func (node *TreeNode) maximum() *TreeNode {
 	return node
 }
 
-// // next 中序遍历node的下一个节点
-// func (node *TreeNode) next() bool {
-// 	if condition {
-
-// 	}
-// }
-
 // printBTreeNode printBTreeNode
-func (node *TreeNode) printBTreeNode() {
+func (node *TreeNode) printBTreeNode(offset *int) (str string) {
 	if node.parent != nil {
-		offset := node.parent.iOffset
-
-		if offset == len(node.parent.entries) {
-			fmt.Printf("节点key: %v, \t此节点为父节点key[%v]的右节点\n", node.printBTreeNodeKeys(), node.parent.entries[offset-1].GetKey())
+		if *offset == len(node.parent.entries) {
+			str = fmt.Sprintf("节点key: %v, \t此节点为父节点key[%v]的右节点\n", node.printBTreeNodeKeys(), node.parent.entries[*offset-1].GetKey())
+			*offset = 0
 		} else {
-			fmt.Printf("节点key: %v, \t此节点为父节点key[%v]的左节点\n", node.printBTreeNodeKeys(), node.parent.entries[offset].GetKey())
+			str = fmt.Sprintf("节点key: %v, \t此节点为父节点key[%v]的左节点\n", node.printBTreeNodeKeys(), node.parent.entries[*offset].GetKey())
+			(*offset)++
 		}
 	} else {
 		if len(node.entries) == 0 {
-			fmt.Printf("此b树为一个空树\n")
+			str = fmt.Sprintf("此b树为一个空树\n")
 		} else {
-			fmt.Printf("节点key: %v, \t此节点为根节点\n", node.printBTreeNodeKeys())
+			str = fmt.Sprintf("节点key: %v, \t此节点为根节点\n", node.printBTreeNodeKeys())
 		}
 	}
+
+	return str
 }
 
 // printBTreeNodeKeys printBTreeNodeKeys

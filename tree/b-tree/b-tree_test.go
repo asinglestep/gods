@@ -36,7 +36,7 @@ const DEGREE = 10
 // Insert Test
 func Test_BTreeRandInsert(t *testing.T) {
 	tree := NewTree(DEGREE, btreeComparator{})
-	var num = 1000000
+	var num = 100
 
 	array := rand.New(rand.NewSource(time.Now().UnixNano())).Perm(num)
 	// array = []int{8, 6, 7, 0, 9, 3, 5, 4, 2, 1}
@@ -49,7 +49,7 @@ func Test_BTreeRandInsert(t *testing.T) {
 		t.Fatalf("插入 - 验证b树错误: 数组 %v\n", array)
 	}
 
-	// tree.PrintBTree()
+	// fmt.Println(tree)
 	// if err := tree.Dot(); err != nil {
 	// 	fmt.Printf("Dot error %v\n", err)
 	// }
@@ -94,47 +94,47 @@ func Test_BTreeDelete(t *testing.T) {
 		tree.Insert(v, v)
 	}
 
-	tree.PrintBTree()
+	// fmt.Println(tree)
 
 	fmt.Println("\n删除3")
 	tree.Delete(3) // test MergeNode - bBig = true
-	tree.PrintBTree()
+	// fmt.Println(tree)
 
 	fmt.Println("\n删除6")
 	tree.Delete(6)
-	tree.PrintBTree()
+	// fmt.Println(tree)
 
 	fmt.Println("\n删除5")
 	tree.Delete(5) // test MoveKey - bBig = true
-	tree.PrintBTree()
+	// fmt.Println(tree)
 
 	fmt.Println("\n删除9")
 	tree.Delete(9) // test MergeNode - bBig = false
-	tree.PrintBTree()
+	// fmt.Println(tree)
 
 	fmt.Println("\n删除2")
 	tree.Delete(2)
-	tree.PrintBTree()
+	// fmt.Println(tree)
 
 	fmt.Println("\n删除1")
 	tree.Delete(1)
-	tree.PrintBTree()
+	// fmt.Println(tree)
 
 	fmt.Println("\n删除8")
 	tree.Delete(8) // test MoveKey - bBig = false
-	tree.PrintBTree()
+	// fmt.Println(tree)
 
 	fmt.Println("\n删除0")
 	tree.Delete(0)
-	tree.PrintBTree()
+	// fmt.Println(tree)
 
 	fmt.Println("\n删除7")
 	tree.Delete(7)
-	tree.PrintBTree()
+	// fmt.Println(tree)
 
 	fmt.Println("\n删除4")
 	tree.Delete(4)
-	tree.PrintBTree()
+	// fmt.Println(tree)
 }
 
 func Test_BTreeRandDelete(t *testing.T) {
@@ -159,7 +159,7 @@ func Test_BTreeRandDelete(t *testing.T) {
 		t.Fatalf("删除 - 验证b树错误: 数组 %v\n", deleteArray)
 	}
 
-	// tree.PrintBTree()
+	// fmt.Println(tree)
 
 	idx := num / 2
 	iter := NewIterator(tree)
@@ -220,8 +220,9 @@ func Test_BTreeSearch(t *testing.T) {
 }
 
 func Test_BTreeeRangeSearch(t *testing.T) {
-	tree := NewTree(DEGREE, btreeComparator{})
 	var num = 1000000
+	var diff = 1000
+	tree := NewTree(DEGREE, btreeComparator{})
 
 	insertArray := rand.New(rand.NewSource(time.Now().UnixNano())).Perm(num)
 	for _, v := range insertArray {
@@ -232,11 +233,16 @@ func Test_BTreeeRangeSearch(t *testing.T) {
 		t.Fatalf("插入 - 验证b树错误: 数组 %v\n", insertArray)
 	}
 
-	// tree.PrintBTree()
+	// fmt.Println(tree)
 
 	minKey := rand.New(rand.NewSource(time.Now().UnixNano())).Intn(num)
-	maxKey := minKey + 1000
+	maxKey := minKey + diff
+
 	entryList := tree.SearchRange(minKey, maxKey)
+	if len(entryList) != diff+1 {
+		t.Fatalf("len(entryList) != diff\n")
+	}
+
 	for i, v := range entryList {
 		if minKey+i != v.GetKey().(int) {
 			t.Fatalf("SearchRange错误, minKey+Key(i) != v.Key\n")

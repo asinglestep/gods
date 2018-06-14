@@ -1,6 +1,7 @@
 package btree
 
 import (
+	"bytes"
 	"container/list"
 	"fmt"
 	"os/exec"
@@ -78,7 +79,8 @@ func (t *Tree) deleteKey(key interface{}) {
 
 	for {
 		node, pos = t.lookup(node, key)
-		if node == nil {
+		if node.isLeaf() && pos == len(node.entries) {
+			// 没找到
 			return
 		}
 
@@ -139,7 +141,8 @@ func (t *Tree) deleteFixUp(node *TreeNode, key interface{}) {
 // Search 查找指定的key对应的Entry
 func (t *Tree) Search(key interface{}) *utils.Entry {
 	node, pos := t.lookup(t.root, key)
-	if node == nil {
+	if node.isLeaf() && pos == len(node.entries) {
+		// 没找到
 		return nil
 	}
 
@@ -148,59 +151,15 @@ func (t *Tree) Search(key interface{}) *utils.Entry {
 
 // SearchRange 查找key在[min, max]之间的Entry
 func (t *Tree) SearchRange(min, max interface{}) []*utils.Entry {
-	stack := list.New()
-	node := t.root
 	entries := []*utils.Entry{}
 
-	for {
-		// 将所有包含min的节点加到stack中
-		pos := node.findKeyPosition(t.comparator, min)
-		if pos < len(node.entries) {
-			node.iOffset = pos
-			node.bHandle = true
-			stack.PushBack(node)
-		}
-
-		if node.isLeaf() {
+	iter := NewIteratorWithKey(t, min)
+	for iter.Next() {
+		if t.comparator.Compare(iter.GetKey(), max) == utils.Gt {
 			break
 		}
 
-		node = node.childrens[pos]
-	}
-
-	for stack.Len() != 0 {
-		e := stack.Remove(stack.Back())
-		node := e.(*TreeNode)
-
-		if node.isLeaf() {
-			for _, v := range node.entries[node.iOffset:] {
-				if t.comparator.Compare(v.GetKey(), max) == utils.Gt {
-					break
-				}
-
-				entries = append(entries, v)
-			}
-		} else {
-			if node.iOffset == len(node.entries) {
-				node.iOffset = 0
-				continue
-			}
-
-			if !node.bHandle {
-				node.bHandle = true
-			} else {
-				// iOffset加一
-				if t.comparator.Compare(node.entries[node.iOffset].GetKey(), max) == utils.Gt {
-					break
-				}
-
-				entries = append(entries, node.entries[node.iOffset])
-				node.iOffset++
-			}
-
-			stack.PushBack(node)
-			stack.PushBack(node.childrens[node.iOffset])
-		}
+		entries = append(entries, iter.entry)
 	}
 
 	return entries
@@ -221,12 +180,10 @@ func (t *Tree) getAdjacentNode(parent *TreeNode, key interface{}) (adjNode *Tree
 	if pos == 0 || (pos != len(parent.entries) && len(parent.childrens[pos-1].entries) <= t.minEntry) {
 		// 第一个key 或者 key在parent节点上且左侧相邻节点的关键字小于t个，返回右侧相邻节点
 		adjNode = parent.childrens[pos+1]
-		// pEntry = parent.entries[pos]
 		bBig = true
 	} else {
 		// key不在parent节点上 或者 左侧相邻节点的关键字至少有t个，返回左侧相邻节点
 		adjNode = parent.childrens[pos-1]
-		// pEntry = parent.entries[pos-1]
 	}
 
 	return adjNode, pos, bBig
@@ -467,8 +424,8 @@ func (t *Tree) lookup(sNode *TreeNode, key interface{}) (node *TreeNode, pos int
 		}
 
 		if node.isLeaf() {
-			// 如果是叶子节点，退出
-			return nil, -1
+			// 没找到，退出
+			return node, pos
 		}
 
 		node = node.childrens[pos]
@@ -497,14 +454,19 @@ func (t *Tree) minimum() *TreeNode {
 	return t.root.minimum()
 }
 
+// maximum 中序遍历后，树的最大节点
+func (t *Tree) maximum() *TreeNode {
+	return t.root.maximum()
+}
+
 // VerifBTree 验证是否是一个b树
 func (t *Tree) VerifBTree() bool {
-	entires := make([]*utils.Entry, 0)
-	stack := list.New()
-	stack.PushBack(t.root)
+	entires := make([]*utils.Entry, 0, t.size)
+	queue := list.New()
+	queue.PushBack(t.root)
 
-	for stack.Len() != 0 {
-		e := stack.Remove(stack.Back())
+	for queue.Len() != 0 {
+		e := queue.Remove(queue.Front())
 		node := e.(*TreeNode)
 		if node.parent != nil {
 			// 每个非根节点至少有t-1个关键字
@@ -520,9 +482,7 @@ func (t *Tree) VerifBTree() bool {
 			return false
 		}
 
-		if node.isLeaf() {
-			entires = append(entires, node.entries...)
-		} else {
+		if !node.isLeaf() {
 			// 非根的内节点至少有t个子女
 			if node.parent != nil && len(node.childrens) < t.minEntry+1 {
 				fmt.Printf("非根的内节点[%v]的子女小于%v\n", node.entries, t.minEntry+1)
@@ -535,25 +495,16 @@ func (t *Tree) VerifBTree() bool {
 				return false
 			}
 
-			// iOffset超过entires的长度跳过
-			if node.iOffset == len(node.entries) {
-				node.iOffset = 0
-				node.bHandle = false
-				continue
+			// 添加node的所有子节点到queue中
+			for i := range node.childrens {
+				queue.PushBack(node.childrens[i])
 			}
-
-			if !node.bHandle {
-				// 第一次弹出这个node
-				node.bHandle = true
-			} else {
-				// 将entry加入entires，iOffset加一
-				entires = append(entires, node.entries[node.iOffset])
-				node.iOffset++
-			}
-
-			stack.PushBack(node)
-			stack.PushBack(node.childrens[node.iOffset])
 		}
+	}
+
+	iter := NewIterator(t)
+	for iter.Next() {
+		entires = append(entires, iter.entry)
 	}
 
 	// 验证顺序
@@ -564,6 +515,7 @@ func (t *Tree) VerifBTree() bool {
 		}
 	}
 
+	// 验证key的数量
 	if len(entires) != t.size {
 		fmt.Printf("len(entires) != t.size, len(entires) %v, t.size %v", len(entires), t.size)
 		return false
@@ -572,38 +524,25 @@ func (t *Tree) VerifBTree() bool {
 	return true
 }
 
-// PrintBTree PrintBTree
-func (t *Tree) PrintBTree() {
-	stack := list.New()
-	stack.PushBack(t.root)
+// String String
+func (t *Tree) String() string {
+	buffer := bytes.Buffer{}
+	offset := 0
+	queue := list.New()
+	queue.PushBack(t.root)
 
-	for stack.Len() != 0 {
-		e := stack.Remove(stack.Back())
+	for queue.Len() != 0 {
+		e := queue.Remove(queue.Front())
 		node := e.(*TreeNode)
 
-		if node.isLeaf() {
-			node.printBTreeNode()
-		} else {
-			// iOffset超过keys的长度跳过
-			if node.iOffset == len(node.entries) {
-				node.iOffset = 0
-				node.bHandle = false
-				continue
-			}
+		buffer.WriteString(node.printBTreeNode(&offset))
 
-			if !node.bHandle {
-				// 第一次弹出这个node
-				node.printBTreeNode()
-				node.bHandle = true
-			} else {
-				// iOffset加一
-				node.iOffset++
-			}
-
-			stack.PushBack(node)
-			stack.PushBack(node.childrens[node.iOffset])
+		for i := range node.childrens {
+			queue.PushBack(node.childrens[i])
 		}
 	}
+
+	return buffer.String()
 }
 
 type dotNode struct {
