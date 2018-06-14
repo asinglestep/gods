@@ -459,8 +459,8 @@ func (t *Tree) maximum() *TreeNode {
 	return t.root.maximum()
 }
 
-// VerifBTree 验证是否是一个b树
-func (t *Tree) VerifBTree() bool {
+// Verify 验证是否是一个b树
+func (t *Tree) Verify() bool {
 	entires := make([]*utils.Entry, 0, t.size)
 	queue := list.New()
 	queue.PushBack(t.root)

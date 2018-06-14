@@ -36,7 +36,7 @@ const DEGREE = 10
 // Insert Test
 func Test_BTreeRandInsert(t *testing.T) {
 	tree := NewTree(DEGREE, btreeComparator{})
-	var num = 100
+	var num = 1000000
 
 	array := rand.New(rand.NewSource(time.Now().UnixNano())).Perm(num)
 	// array = []int{8, 6, 7, 0, 9, 3, 5, 4, 2, 1}
@@ -45,7 +45,7 @@ func Test_BTreeRandInsert(t *testing.T) {
 		tree.Insert(v, v)
 	}
 
-	if !tree.VerifBTree() {
+	if !tree.Verify() {
 		t.Fatalf("插入 - 验证b树错误: 数组 %v\n", array)
 	}
 
@@ -59,7 +59,7 @@ func Test_BTreeRandInsert(t *testing.T) {
 	iter := NewIterator(tree)
 	for iter.Next() {
 		if iter.GetKey().(int) != idx {
-			t.Fatalf("Test_BTreeRandInsert err")
+			t.Fatalf("Test_BTreeRandInsert err\n")
 		}
 
 		idx++
@@ -79,7 +79,7 @@ func Test_BatchBTreeRandInsert(t *testing.T) {
 			tree.Insert(v, v)
 		}
 
-		if !tree.VerifBTree() {
+		if !tree.Verify() {
 			t.Fatal("Test_BatchBTreeRandInsert err")
 		}
 	}
@@ -94,47 +94,47 @@ func Test_BTreeDelete(t *testing.T) {
 		tree.Insert(v, v)
 	}
 
-	// fmt.Println(tree)
+	fmt.Println(tree)
 
 	fmt.Println("\n删除3")
 	tree.Delete(3) // test MergeNode - bBig = true
-	// fmt.Println(tree)
+	fmt.Println(tree)
 
 	fmt.Println("\n删除6")
 	tree.Delete(6)
-	// fmt.Println(tree)
+	fmt.Println(tree)
 
 	fmt.Println("\n删除5")
 	tree.Delete(5) // test MoveKey - bBig = true
-	// fmt.Println(tree)
+	fmt.Println(tree)
 
 	fmt.Println("\n删除9")
 	tree.Delete(9) // test MergeNode - bBig = false
-	// fmt.Println(tree)
+	fmt.Println(tree)
 
 	fmt.Println("\n删除2")
 	tree.Delete(2)
-	// fmt.Println(tree)
+	fmt.Println(tree)
 
 	fmt.Println("\n删除1")
 	tree.Delete(1)
-	// fmt.Println(tree)
+	fmt.Println(tree)
 
 	fmt.Println("\n删除8")
 	tree.Delete(8) // test MoveKey - bBig = false
-	// fmt.Println(tree)
+	fmt.Println(tree)
 
 	fmt.Println("\n删除0")
 	tree.Delete(0)
-	// fmt.Println(tree)
+	fmt.Println(tree)
 
 	fmt.Println("\n删除7")
 	tree.Delete(7)
-	// fmt.Println(tree)
+	fmt.Println(tree)
 
 	fmt.Println("\n删除4")
 	tree.Delete(4)
-	// fmt.Println(tree)
+	fmt.Println(tree)
 }
 
 func Test_BTreeRandDelete(t *testing.T) {
@@ -146,7 +146,7 @@ func Test_BTreeRandDelete(t *testing.T) {
 		tree.Insert(v, v)
 	}
 
-	if !tree.VerifBTree() {
+	if !tree.Verify() {
 		t.Fatalf("插入 - 验证b树错误: 数组 %v\n", insertArray)
 	}
 
@@ -155,7 +155,7 @@ func Test_BTreeRandDelete(t *testing.T) {
 		tree.Delete(v)
 	}
 
-	if !tree.VerifBTree() {
+	if !tree.Verify() {
 		t.Fatalf("删除 - 验证b树错误: 数组 %v\n", deleteArray)
 	}
 
@@ -184,7 +184,7 @@ func Test_BatchBTreeRandDelete(t *testing.T) {
 			tree.Insert(v, v)
 		}
 
-		if !tree.VerifBTree() {
+		if !tree.Verify() {
 			t.Fatalf("插入 - 验证b树错误: 数组 %v\n", insertArray)
 		}
 
@@ -193,7 +193,7 @@ func Test_BatchBTreeRandDelete(t *testing.T) {
 			tree.Delete(v)
 		}
 
-		if !tree.VerifBTree() {
+		if !tree.Verify() {
 			t.Fatalf("删除 - 验证b树错误: 数组 %v\n", deleteArray)
 		}
 	}
@@ -208,7 +208,7 @@ func Test_BTreeSearch(t *testing.T) {
 		tree.Insert(v, v)
 	}
 
-	if !tree.VerifBTree() {
+	if !tree.Verify() {
 		t.Fatalf("插入 - 验证b树错误: 数组 %v\n", insertArray)
 	}
 
@@ -229,7 +229,7 @@ func Test_BTreeeRangeSearch(t *testing.T) {
 		tree.Insert(v, v)
 	}
 
-	if !tree.VerifBTree() {
+	if !tree.Verify() {
 		t.Fatalf("插入 - 验证b树错误: 数组 %v\n", insertArray)
 	}
 
