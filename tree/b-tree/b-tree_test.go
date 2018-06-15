@@ -253,3 +253,60 @@ func Test_BTreeeRangeSearch(t *testing.T) {
 		}
 	}
 }
+
+func Test_BTreeSearchRangeLowerBoundKeyWithLimit(t *testing.T) {
+	tree := NewTree(2, btreeComparator{})
+
+	tree.Insert(30, 30)
+	tree.Insert(20, 20)
+	tree.Insert(10, 10)
+	tree.Insert(40, 40)
+	tree.Insert(50, 50)
+	tree.Insert(100, 100)
+	tree.Insert(60, 60)
+	tree.Insert(80, 80)
+	tree.Insert(90, 90)
+
+	entries := tree.SearchRangeLowerBoundKeyWithLimit(65, 2)
+	// for i, node := range nodeList {
+	// 	fmt.Printf("第%v个节点: \t%v\n", i+1, node.key)
+	// }
+
+	verifArr := []int{80, 90}
+	for i, v := range entries {
+		if v.GetKey().(int) != verifArr[i] {
+			t.Fatalf("Test_BTreeSearchRangeLowerBoundKeyWithLimit err: v.GetKey().(int) != verifArr[%d], v.GetKey().(int): %v, verifArr[%d]: %v\n", i, v.GetKey().(int), i, verifArr[i])
+		}
+	}
+
+	if len(entries) != len(verifArr) {
+		t.Fatalf("Test_BTreeSearchRangeLowerBoundKeyWithLimit err: len(nodeList) != len(verifArr), len(nodeList): %v, len(verifArr): %v\n", len(entries), len(verifArr))
+	}
+}
+
+func Test_BTreeRandSearchRangeLowerBoundKeyWithLimit(t *testing.T) {
+	tree := NewTree(DEGREE, btreeComparator{})
+	var num = 1000000
+
+	array := rand.New(rand.NewSource(time.Now().UnixNano())).Perm(num)
+
+	for _, v := range array {
+		tree.Insert(v, v)
+	}
+
+	// fmt.Println(tree)
+
+	// if !tree.Verify() {
+	// 	fmt.Printf("插入错误, array %v\n", array)
+	// } else {
+	// 	fmt.Println("插入正确")
+	// }
+
+	sKey := rand.New(rand.NewSource(time.Now().UnixNano())).Intn(num)
+	entries := tree.SearchRangeLowerBoundKeyWithLimit(sKey, 1000)
+	for i, entry := range entries {
+		if sKey+i != entry.GetKey().(int) {
+			t.Fatal("Test_BTreeRandSearchRangeLowerBoundKeyWithLimit err")
+		}
+	}
+}

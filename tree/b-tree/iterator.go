@@ -1,8 +1,6 @@
 package btree
 
 import (
-	// "fmt"
-
 	"github.com/asinglestep/gods/utils"
 )
 
@@ -25,12 +23,12 @@ func NewIterator(tree *Tree) *Iterator {
 	return iter
 }
 
-// NewIteratorWithKey 从指定的key开始迭代
-func NewIteratorWithKey(tree *Tree, key interface{}) *Iterator {
+// NewIteratorLowerBoundKey 从大于等于key的位置开始迭代
+func NewIteratorLowerBoundKey(tree *Tree, key interface{}) *Iterator {
 	iter := &Iterator{}
 	iter.tree = tree
 
-	node, pos := tree.lookup(tree.root, key)
+	node, pos := tree.lookupLowerBoundKey(tree.root, key)
 	if node.isLeaf() {
 		iter.node = node
 		iter.entryPos = pos
@@ -61,7 +59,7 @@ func (iter *Iterator) Next() bool {
 
 	parent := iter.node.parent
 	for parent != nil {
-		pos := parent.findKeyPosition(iter.tree.comparator, iter.entry.GetKey())
+		pos := parent.findLowerBoundKeyPosition(iter.tree.comparator, iter.entry.GetKey())
 		if pos+1 < len(parent.childrens) {
 			iter.entry = parent.entries[pos]
 			iter.node = parent.childrens[pos+1].minimum()

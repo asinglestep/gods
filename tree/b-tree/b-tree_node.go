@@ -48,8 +48,8 @@ func (node *TreeNode) updateChildrensParent(parent *TreeNode) {
 	}
 }
 
-// findKeyPosition 在节点中查找第一个大于等于key的位置，没有比key大的节点，则返回此节点最后一个key
-func (node *TreeNode) findKeyPosition(comparator utils.Comparator, key interface{}) int {
+// findLowerBoundKeyPosition 在节点中查找第一个大于等于key的位置，没有比key大的，则返回node.entries的长度
+func (node *TreeNode) findLowerBoundKeyPosition(comparator utils.Comparator, key interface{}) int {
 	i, j := 0, len(node.entries)
 
 	for i < j {
@@ -170,7 +170,7 @@ func (node *TreeNode) dot(comparator utils.Comparator, nName string, pName strin
 
 	// 添加一个edge
 	if node.parent != nil {
-		pos := node.parent.findKeyPosition(comparator, node.entries[0].GetKey())
+		pos := node.parent.findLowerBoundKeyPosition(comparator, node.entries[0].GetKey())
 		dEdge = &dot.Edge{}
 		dEdge.Src = pName
 		dEdge.SrcPort = ":f" + fmt.Sprintf("%d", pos)

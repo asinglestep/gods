@@ -51,7 +51,7 @@ func (t *Tree) Insert(key, val interface{}) {
 		}
 
 		// 查找key在节点中的位置
-		keyPos = node.findKeyPosition(t.comparator, key)
+		keyPos = node.findLowerBoundKeyPosition(t.comparator, key)
 
 		// 如果是叶子节点，退出
 		if node.isLeaf() {
@@ -79,7 +79,7 @@ func (t *Tree) deleteKey(key interface{}) {
 
 	for {
 		node, pos = t.lookup(node, key)
-		if node.isLeaf() && pos == len(node.entries) {
+		if node == nil {
 			// 没找到
 			return
 		}
@@ -141,7 +141,7 @@ func (t *Tree) deleteFixUp(node *TreeNode, key interface{}) {
 // Search 查找指定的key对应的Entry
 func (t *Tree) Search(key interface{}) *utils.Entry {
 	node, pos := t.lookup(t.root, key)
-	if node.isLeaf() && pos == len(node.entries) {
+	if node == nil {
 		// 没找到
 		return nil
 	}
@@ -153,7 +153,7 @@ func (t *Tree) Search(key interface{}) *utils.Entry {
 func (t *Tree) SearchRange(min, max interface{}) []*utils.Entry {
 	entries := []*utils.Entry{}
 
-	iter := NewIteratorWithKey(t, min)
+	iter := NewIteratorLowerBoundKey(t, min)
 	for iter.Next() {
 		if t.comparator.Compare(iter.GetKey(), max) == utils.Gt {
 			break
@@ -163,6 +163,24 @@ func (t *Tree) SearchRange(min, max interface{}) []*utils.Entry {
 	}
 
 	return entries
+}
+
+// SearchRangeLowerBoundKeyWithLimit 查找大于等于key的limit个节点
+func (t *Tree) SearchRangeLowerBoundKeyWithLimit(key interface{}, limit int64) []*utils.Entry {
+	var count int64
+	list := make([]*utils.Entry, 0, limit)
+
+	iter := NewIteratorLowerBoundKey(t, key)
+	for iter.Next() {
+		if count == limit {
+			break
+		}
+
+		list = append(list, iter.entry)
+		count++
+	}
+
+	return list
 }
 
 // getAdjacentNode 获取key所在节点的相邻节点
@@ -176,7 +194,7 @@ func (t *Tree) SearchRange(min, max interface{}) []*utils.Entry {
 // pos: 父节点中第一个大于等于key的位置
 // bBig: true - 相邻节点在右侧，false - 相邻节点在左侧
 func (t *Tree) getAdjacentNode(parent *TreeNode, key interface{}) (adjNode *TreeNode, pos int, bBig bool) {
-	pos = parent.findKeyPosition(t.comparator, key)
+	pos = parent.findLowerBoundKeyPosition(t.comparator, key)
 	if pos == 0 || (pos != len(parent.entries) && len(parent.childrens[pos-1].entries) <= t.minEntry) {
 		// 第一个key 或者 key在parent节点上且左侧相邻节点的关键字小于t个，返回右侧相邻节点
 		adjNode = parent.childrens[pos+1]
@@ -367,7 +385,7 @@ func (t *Tree) splitNode(node *TreeNode) (left *TreeNode, right *TreeNode, midEn
 	midEntry = node.entries[mid]
 
 	// 找到midEntry.key在父节点中的位置
-	pos := parent.findKeyPosition(t.comparator, midEntry.GetKey())
+	pos := parent.findLowerBoundKeyPosition(t.comparator, midEntry.GetKey())
 	// 将entry插入到父节点中
 	parent.insertEntry(midEntry, pos)
 
@@ -417,7 +435,35 @@ func (t *Tree) lookup(sNode *TreeNode, key interface{}) (node *TreeNode, pos int
 	node = sNode
 
 	for {
-		pos = node.findKeyPosition(t.comparator, key)
+		pos = node.findLowerBoundKeyPosition(t.comparator, key)
+		if pos != len(node.entries) && t.comparator.Compare(node.entries[pos].GetKey(), key) == utils.Et {
+			// 找到了
+			return node, pos
+		}
+
+		if node.isLeaf() {
+			// 没找到，退出
+			return nil, -1
+		}
+
+		node = node.childrens[pos]
+	}
+}
+
+// lookupLowerBoundKey 查找第一个大于等于key的entry所在的节点
+//
+// @param
+// sNode: 从sNode开始查找
+// key: 要查找的key
+//
+// @return
+// node: key所在的节点
+// pos: key在节点中的位置
+func (t *Tree) lookupLowerBoundKey(sNode *TreeNode, key interface{}) (node *TreeNode, pos int) {
+	node = sNode
+
+	for {
+		pos = node.findLowerBoundKeyPosition(t.comparator, key)
 		if pos != len(node.entries) && t.comparator.Compare(node.entries[pos].GetKey(), key) == utils.Et {
 			// 找到了
 			return node, pos
