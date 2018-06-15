@@ -281,7 +281,7 @@ func Test_RbTreeRandSearchRangeLowerBoundKeyWithLimit(t *testing.T) {
 	nodeList := tree.SearchRangeLowerBoundKeyWithLimit(sKey, 1000)
 	for i, node := range nodeList {
 		if sKey+i != node.GetKey().(int) {
-			t.Fatal("SearchRangeLowerBoundKeyWithLimit err")
+			t.Fatal("Test_RbTreeRandSearchRangeLowerBoundKeyWithLimit err")
 		}
 	}
 }
@@ -334,14 +334,14 @@ func Test_RbTreeRandSearchRangeUpperBoundKeyWithLimit(t *testing.T) {
 	// 	fmt.Println("插入正确")
 	// }
 	if !tree.Verify() {
-		t.Fatal("SearchRangeUpperBoundKeyWithLimit err")
+		t.Fatal("Test_RbTreeRandSearchRangeUpperBoundKeyWithLimit err")
 	}
 
 	sKey := rand.New(rand.NewSource(time.Now().UnixNano())).Intn(num)
 	nodeList := tree.SearchRangeUpperBoundKeyWithLimit(sKey, 1000)
 	for i, node := range nodeList {
 		if sKey-(len(nodeList)-i-1) != node.GetKey().(int) {
-			t.Fatal("SearchRangeUpperBoundKeyWithLimit err: 查找结果错误")
+			t.Fatal("Test_RbTreeRandSearchRangeUpperBoundKeyWithLimit err: 查找结果错误")
 		}
 	}
 }

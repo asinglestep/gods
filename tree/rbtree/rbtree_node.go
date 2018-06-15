@@ -250,17 +250,6 @@ func (node *TreeNode) prev() *TreeNode {
 	return parent
 }
 
-// reverse 倒序
-func reverse(list []*TreeNode) []*TreeNode {
-	listLen := len(list)
-
-	for i := 0; i < listLen/2; i++ {
-		list[i], list[listLen-i-1] = list[listLen-i-1], list[i]
-	}
-
-	return list
-}
-
 // dot dot
 func (node *TreeNode) dot() (dNode *dot.Node, dEdge *dot.Edge) {
 	color := "#FF0000"
@@ -302,4 +291,15 @@ type nodeColorStat struct {
 	blackCount      int64
 	leftBlackCount  int64
 	rightBlackCount int64
+}
+
+// reverse 倒序
+func reverse(list []*TreeNode) []*TreeNode {
+	listLen := len(list)
+
+	for i := 0; i < listLen/2; i++ {
+		list[i], list[listLen-i-1] = list[listLen-i-1], list[i]
+	}
+
+	return list
 }
