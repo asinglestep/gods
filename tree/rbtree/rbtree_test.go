@@ -30,52 +30,52 @@ func Test_RbTreeInsert(t *testing.T) {
 	tree := NewTree(rbtreeComparator{})
 	fmt.Println("插入3")
 	tree.Insert(3, 3)
-	tree.PrintRbTree()
+	fmt.Println(tree)
 
 	fmt.Println("\n插入2")
 	tree.Insert(2, 2)
-	tree.PrintRbTree()
+	fmt.Println(tree)
 
 	fmt.Println("\n插入1")
 	tree.Insert(1, 1) // test case 2.4
-	tree.PrintRbTree()
+	fmt.Println(tree)
 
 	fmt.Println("\n插入4")
 	tree.Insert(4, 4) // test case 2.3
-	tree.PrintRbTree()
+	fmt.Println(tree)
 
 	fmt.Println("\n插入5")
 	tree.Insert(5, 5) // test case 2.5
-	tree.PrintRbTree()
+	fmt.Println(tree)
 
 	fmt.Println("\n插入10")
 	tree.Insert(10, 10)
-	tree.PrintRbTree()
+	fmt.Println(tree)
 
 	fmt.Println("\n插入6")
 	tree.Insert(6, 6) // test case 2.6
-	tree.PrintRbTree()
+	fmt.Println(tree)
 
 	fmt.Println("\n插入8")
 	tree.Insert(8, 8)
-	tree.PrintRbTree()
+	fmt.Println(tree)
 
 	fmt.Println("\n插入9")
 	tree.Insert(9, 9) // test case 2.7
-	tree.PrintRbTree()
+	fmt.Println(tree)
 
 	// fmt.Printf("插入测试\n")
 	// fmt.Printf("\n输入数组: \n")
 	// fmt.Println("[3, 2, 1, 4, 5, 10, 6, 8, 9]")
 	// fmt.Printf("\n中序遍历结果: \n")
-	// tree.PrintRbTree()
-	// fmt.Printf("\n测试结果是否正确: %v\n", tree.VerifRbTree())
+	// fmt.Println(tree)
+	// fmt.Printf("\n测试结果是否正确: %v\n", tree.Verify())
 
 	// if err := tree.Dot(); err != nil {
 	// 	fmt.Printf("Dot error %v\n", err)
 	// }
 
-	if !tree.VerifRbTree() {
+	if !tree.Verify() {
 		t.Fatal("Test_RbTreeInsert err")
 	}
 }
@@ -94,9 +94,9 @@ func Test_RbTreeRandInsert(t *testing.T) {
 	}
 
 	// fmt.Printf("\n中序遍历结果: \n")
-	// tree.PrintRbTree()
-	// fmt.Printf("\n测试结果是否正确: %v\n", tree.VerifRbTree())
-	if !tree.VerifRbTree() {
+	// fmt.Println(tree)
+	// fmt.Printf("\n测试结果是否正确: %v\n", tree.Verify())
+	if !tree.Verify() {
 		t.Fatal("Test_RbTreeRandInsert err")
 	}
 
@@ -123,83 +123,7 @@ func Test_RbTreeDelete(t *testing.T) {
 	tree.Insert(8, 8)
 	tree.Insert(9, 9)
 	fmt.Println("红黑树:")
-	tree.PrintRbTree()
-
-	fmt.Println("\n删除9")
-	tree.Delete(9) // test case 2.1
-	tree.PrintRbTree()
-
-	fmt.Println("\n删除5")
-	tree.Delete(5) // test case 2.2.3
-	tree.PrintRbTree()
-
-	fmt.Println("\n删除6")
-	tree.Delete(6) // test case 2.2.1
-	tree.PrintRbTree()
-
-	fmt.Println("\n删除10")
-	tree.Delete(10)
-	tree.PrintRbTree()
-
-	fmt.Println("\n删除8")
-	tree.Delete(8) // test case 2.3.4, case 2.3.1
-	tree.PrintRbTree()
-
-	fmt.Println("\n插入10")
-	tree.Insert(10, 10)
-	tree.PrintRbTree()
-
-	fmt.Println("\n插入8")
-	tree.Insert(8, 8)
-	tree.PrintRbTree()
-
-	fmt.Println("\n删除1")
-	tree.Delete(1) // test case 2.2.4
-	tree.PrintRbTree()
-
-	fmt.Println("\n删除10")
-	tree.Delete(10)
-	tree.PrintRbTree()
-
-	fmt.Println("\n删除8")
-	tree.Delete(8) // test case 2.3.3
-	tree.PrintRbTree()
-
-	fmt.Println("\n插入1")
-	tree.Insert(1, 1)
-	tree.PrintRbTree()
-
-	fmt.Println("\n删除4")
-	tree.Delete(4) // test case 2.3.2
-	tree.PrintRbTree()
-
-	fmt.Println("\n删除3")
-	tree.Delete(3)
-	tree.PrintRbTree()
-
-	fmt.Println("\n插入4")
-	tree.Insert(4, 4)
-	tree.PrintRbTree()
-
-	fmt.Println("\n插入3")
-	tree.Insert(3, 3)
-	tree.PrintRbTree()
-
-	fmt.Println("\n删除1")
-	tree.Delete(1) // test case 2.2.2
-	tree.PrintRbTree()
-
-	fmt.Println("\n删除3")
-	tree.Delete(3)
-	tree.PrintRbTree()
-
-	fmt.Println("\n删除4")
-	tree.Delete(4)
-	tree.PrintRbTree()
-
-	fmt.Println("\n删除2")
-	tree.Delete(2)
-	tree.PrintRbTree()
+	fmt.Println(tree)
 }
 
 func Test_RbTreeRandDelete(t *testing.T) {
@@ -212,9 +136,9 @@ func Test_RbTreeRandDelete(t *testing.T) {
 		tree.Insert(v, v)
 	}
 
-	// tree.PrintRbTree()
+	// fmt.Println(tree)
 
-	// if !tree.VerifRbTree() {
+	// if !tree.Verify() {
 	// 	fmt.Printf("插入错误, array %v\n", array)
 	// } else {
 	// 	fmt.Println("插入正确")
@@ -227,15 +151,15 @@ func Test_RbTreeRandDelete(t *testing.T) {
 	}
 
 	// fmt.Println("")
-	// tree.PrintRbTree()
+	// fmt.Println(tree)
 
-	// if !tree.VerifRbTree() {
+	// if !tree.Verify() {
 	// 	fmt.Printf("删除错误, array %v, dArray %v\n", array, dArray)
 	// } else {
 	// 	fmt.Printf("删除正确\n")
 	// }
 
-	if !tree.VerifRbTree() {
+	if !tree.Verify() {
 		t.Fatal("Test_RbTreeRandDelete err")
 	}
 
@@ -287,7 +211,7 @@ func Test_RbTreeSearchRange(t *testing.T) {
 	tree.Insert(8, 8)
 	tree.Insert(9, 9)
 
-	// tree.PrintRbTree()
+	// fmt.Println(tree)
 	nodeList := tree.SearchRange(7, 11)
 	// for i, v := range nodeList {
 	// 	fmt.Printf("第%v个节点 -- key: %v\n", i+1, v.key)
@@ -296,8 +220,12 @@ func Test_RbTreeSearchRange(t *testing.T) {
 	verifArr := []int{8, 9, 10}
 	for i, v := range nodeList {
 		if v.GetKey().(int) != verifArr[i] {
-			t.Fatal("Test_RbTreeSearchRange err")
+			t.Fatalf("Test_RbTreeSearchRange err: v.GetKey().(int) != verifArr[%d], v.GetKey().(int): %v, verifArr[%d]: %v\n", i, v.GetKey().(int), i, verifArr[i])
 		}
+	}
+
+	if len(nodeList) != len(verifArr) {
+		t.Fatalf("Test_RbTreeSearchRange err: len(nodeList) != len(verifArr), len(nodeList): %v, len(verifArr): %v\n", len(nodeList), len(verifArr))
 	}
 }
 
@@ -322,8 +250,12 @@ func Test_RbTreeSearchRangeLowerBoundKeyWithLimit(t *testing.T) {
 	verifArr := []int{6, 8}
 	for i, v := range nodeList {
 		if v.GetKey().(int) != verifArr[i] {
-			t.Fatal("Test_RbTreeSearchRangeLowerBoundKeyWithLimit err")
+			t.Fatalf("Test_RbTreeSearchRangeLowerBoundKeyWithLimit err: v.GetKey().(int) != verifArr[%d], v.GetKey().(int): %v, verifArr[%d]: %v\n", i, v.GetKey().(int), i, verifArr[i])
 		}
+	}
+
+	if len(nodeList) != len(verifArr) {
+		t.Fatalf("Test_RbTreeSearchRangeLowerBoundKeyWithLimit err: len(nodeList) != len(verifArr), len(nodeList): %v, len(verifArr): %v\n", len(nodeList), len(verifArr))
 	}
 }
 
@@ -337,9 +269,9 @@ func Test_RbTreeRandSearchRangeLowerBoundKeyWithLimit(t *testing.T) {
 		tree.Insert(v, v)
 	}
 
-	// tree.PrintRbTree()
+	// fmt.Println(tree)
 
-	// if !tree.VerifRbTree() {
+	// if !tree.Verify() {
 	// 	fmt.Printf("插入错误, array %v\n", array)
 	// } else {
 	// 	fmt.Println("插入正确")
@@ -375,8 +307,12 @@ func Test_RbTreeSearchRangeUpperBoundKeyWithLimit(t *testing.T) {
 	verifArr := []int{1, 2, 3}
 	for i, v := range nodeList {
 		if v.GetKey().(int) != verifArr[i] {
-			t.Fatal("Test_RbTreeSearchRangeUpperBoundKeyWithLimit err")
+			t.Fatalf("Test_RbTreeSearchRangeUpperBoundKeyWithLimit err: v.GetKey().(int) != verifArr[%d], v.GetKey().(int): %v, verifArr[%d]: %v\n", i, v.GetKey().(int), i, verifArr[i])
 		}
+	}
+
+	if len(nodeList) != len(verifArr) {
+		t.Fatalf("Test_RbTreeSearchRangeLowerBoundKeyWithLimit err: len(nodeList) != len(verifArr), len(nodeList): %v, len(verifArr): %v\n", len(nodeList), len(verifArr))
 	}
 }
 
@@ -390,19 +326,22 @@ func Test_RbTreeRandSearchRangeUpperBoundKeyWithLimit(t *testing.T) {
 		tree.Insert(v, v)
 	}
 
-	// tree.PrintRbTree()
+	// fmt.Println(tree)
 
-	if !tree.VerifRbTree() {
-		fmt.Printf("插入错误, array %v\n", array)
-	} else {
-		fmt.Println("插入正确")
+	// if !tree.Verify() {
+	// 	fmt.Printf("插入错误, array %v\n", array)
+	// } else {
+	// 	fmt.Println("插入正确")
+	// }
+	if !tree.Verify() {
+		t.Fatal("SearchRangeUpperBoundKeyWithLimit err")
 	}
 
 	sKey := rand.New(rand.NewSource(time.Now().UnixNano())).Intn(num)
 	nodeList := tree.SearchRangeUpperBoundKeyWithLimit(sKey, 1000)
 	for i, node := range nodeList {
 		if sKey-(len(nodeList)-i-1) != node.GetKey().(int) {
-			t.Fatal("SearchRangeUpperBoundKeyWithLimit err")
+			t.Fatal("SearchRangeUpperBoundKeyWithLimit err: 查找结果错误")
 		}
 	}
 }

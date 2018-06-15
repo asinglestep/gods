@@ -2,35 +2,59 @@ package rbtree
 
 // Iterator Iterator
 type Iterator struct {
-	index int
-	tree  *Tree
-	node  *TreeNode
+	node   *TreeNode
+	tree   *Tree
+	bBegin bool
 }
 
 // NewIterator NewIterator
 func NewIterator(tree *Tree) *Iterator {
 	iter := &Iterator{}
-	iter.index = -1
 	iter.tree = tree
-	iter.node = nil
+	iter.node = iter.tree.minimum()
+	iter.bBegin = true
+
+	return iter
+}
+
+// NewIteratorWithNode 从指定的node开始迭代
+func NewIteratorWithNode(tree *Tree, node *TreeNode) *Iterator {
+	iter := &Iterator{}
+	iter.tree = tree
+	iter.node = node
+	iter.bBegin = true
 
 	return iter
 }
 
 // Next Next
 func (iter *Iterator) Next() bool {
-	iter.index++
-	if iter.index >= iter.tree.size {
-		return false
-	}
-
-	if iter.index == 0 {
-		iter.node = iter.tree.minimum()
+	if iter.bBegin {
+		iter.bBegin = false
 	} else {
 		iter.node = iter.node.next()
 	}
 
-	return true
+	if iter.node != nil {
+		return true
+	}
+
+	return false
+}
+
+// Prev Prev
+func (iter *Iterator) Prev() bool {
+	if iter.bBegin {
+		iter.bBegin = false
+	} else {
+		iter.node = iter.node.prev()
+	}
+
+	if iter.node != nil {
+		return true
+	}
+
+	return false
 }
 
 // GetKey GetKey
