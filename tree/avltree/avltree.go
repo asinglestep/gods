@@ -1,6 +1,7 @@
 package avltree
 
 import (
+	"bytes"
 	"container/list"
 	"fmt"
 	"os/exec"
@@ -216,55 +217,20 @@ func (t *Tree) deleteFixUp(node *TreeNode) {
 
 // Search 查找key指定的节点
 func (t *Tree) Search(key interface{}) *TreeNode {
-	node := t.root
-
-	for !node.isSentinel() {
-		res := t.comparator.Compare(node.GetKey(), key)
-		if res == utils.Et {
-			return node
-		}
-
-		if res == utils.Lt {
-			node = node.right
-		} else {
-			node = node.left
-		}
-	}
-
-	return nil
+	return t.lookup(key)
 }
 
 // SearchRange 查找key在[min, max]之间的节点
 func (t *Tree) SearchRange(min, max interface{}) []*TreeNode {
-	stack := list.New()
 	list := []*TreeNode{}
-	node := t.root
 
-	for !node.isSentinel() {
-		// 将key大于等于min的节点加入到stack中
-		if t.comparator.Compare(node.GetKey(), min) != utils.Lt {
-			stack.PushBack(node)
-			node = node.left
-		} else {
-			node = node.right
-		}
-	}
-
-	for stack.Len() != 0 {
-		e := stack.Remove(stack.Back())
-		node = e.(*TreeNode)
-
-		// node.key大于max，退出
-		if t.comparator.Compare(node.GetKey(), max) == utils.Gt {
+	iter := NewIteratorWithNode(t, t.lookupLowerBoundKey(min))
+	for iter.Next() {
+		if t.comparator.Compare(iter.GetKey(), max) == utils.Gt {
 			break
 		}
 
-		list = append(list, node)
-		node = node.right
-		for !node.isSentinel() {
-			stack.PushBack(node)
-			node = node.left
-		}
+		list = append(list, iter.node)
 	}
 
 	return list
@@ -273,36 +239,16 @@ func (t *Tree) SearchRange(min, max interface{}) []*TreeNode {
 // SearchRangeLowerBoundKeyWithLimit 查找大于等于key的limit个节点
 func (t *Tree) SearchRangeLowerBoundKeyWithLimit(key interface{}, limit int64) []*TreeNode {
 	var count int64
-	stack := list.New()
 	list := make([]*TreeNode, 0, limit)
-	node := t.root
 
-	for !node.isSentinel() {
-		// 将key大于等于key的节点加入到stack中
-		if t.comparator.Compare(node.GetKey(), key) != utils.Lt {
-			stack.PushBack(node)
-			node = node.left
-		} else {
-			node = node.right
-		}
-	}
-
-	for stack.Len() != 0 {
-		e := stack.Remove(stack.Back())
-		node = e.(*TreeNode)
-
-		list = append(list, node)
-		count++
-
+	iter := NewIteratorWithNode(t, t.lookupLowerBoundKey(key))
+	for iter.Next() {
 		if count == limit {
 			break
 		}
 
-		node = node.right
-		for !node.isSentinel() {
-			stack.PushBack(node)
-			node = node.left
-		}
+		list = append(list, iter.node)
+		count++
 	}
 
 	return list
@@ -311,43 +257,24 @@ func (t *Tree) SearchRangeLowerBoundKeyWithLimit(key interface{}, limit int64) [
 // SearchRangeUpperBoundKeyWithLimit 找到小于等于key的limit个节点
 func (t *Tree) SearchRangeUpperBoundKeyWithLimit(key interface{}, limit int64) []*TreeNode {
 	var count int64
-	stack := list.New()
 	list := make([]*TreeNode, 0, limit)
-	node := t.root
 
-	for !node.isSentinel() {
-		// 将key小于等于key的节点加入到stack中
-		if t.comparator.Compare(node.GetKey(), key) != utils.Gt {
-			stack.PushBack(node)
-			node = node.right
-		} else {
-			node = node.left
-		}
-	}
-
-	for stack.Len() != 0 {
-		e := stack.Remove(stack.Back())
-		node = e.(*TreeNode)
-
-		list = append(list, node)
-		count++
-
+	iter := NewIteratorWithNode(t, t.lookupUpperBoundKey(key))
+	for iter.Prev() {
 		if count == limit {
 			break
 		}
 
-		node = node.left
-		for !node.isSentinel() {
-			stack.PushBack(node)
-			node = node.right
-		}
+		list = append(list, iter.node)
+		count++
 	}
 
 	return reverse(list)
 }
 
-// PrintAvlTree PrintAvlTree
-func (t *Tree) PrintAvlTree() {
+// String String
+func (t *Tree) String() string {
+	buffer := bytes.Buffer{}
 	node := t.root
 	stack := list.New()
 
@@ -361,9 +288,9 @@ func (t *Tree) PrintAvlTree() {
 		node = e.(*TreeNode)
 
 		if node.parent != nil {
-			fmt.Printf("节点为: %v, \t节点的高度为: %v, \t父节点为: %v\n", node.GetKey(), node.height, node.parent.GetKey())
+			buffer.WriteString(fmt.Sprintf("节点为: %v, \t节点的高度为: %v, \t父节点为: %v\n", node.GetKey(), node.height, node.parent.GetKey()))
 		} else {
-			fmt.Printf("节点为: %v, \t节点的高度为: %v, \t此节点为根节点\n", node.GetKey(), node.height)
+			buffer.WriteString(fmt.Sprintf("节点为: %v, \t节点的高度为: %v, \t此节点为根节点\n", node.GetKey(), node.height))
 		}
 
 		node = node.right
@@ -372,10 +299,12 @@ func (t *Tree) PrintAvlTree() {
 			node = node.left
 		}
 	}
+
+	return buffer.String()
 }
 
-// VerifAvlTree 验证是否是一个avl树
-func (t *Tree) VerifAvlTree() bool {
+// Verify 验证是否是一个avl树
+func (t *Tree) Verify() bool {
 	node := t.root
 	stack := list.New()
 	keys := make([]interface{}, 0)
@@ -517,4 +446,80 @@ func (t *Tree) minimum() *TreeNode {
 // maximum 中序遍历后，树的最大节点
 func (t *Tree) maximum() *TreeNode {
 	return t.root.maximum()
+}
+
+// lookup 查找key所在的节点
+func (t *Tree) lookup(key interface{}) *TreeNode {
+	node := t.root
+
+	for !node.isSentinel() {
+		res := t.comparator.Compare(node.GetKey(), key)
+		if res == utils.Et {
+			return node
+		}
+
+		if res == utils.Lt {
+			node = node.right
+		} else {
+			node = node.left
+		}
+	}
+
+	return nil
+}
+
+// lookupLowerBoundKey 查找第一个大于等于key的node
+func (t *Tree) lookupLowerBoundKey(key interface{}) *TreeNode {
+	var last *TreeNode
+	node := t.root
+
+	for {
+		res := t.comparator.Compare(node.GetKey(), key)
+		if res == utils.Et {
+			return node
+		}
+
+		if res == utils.Lt {
+			if node.right.isSentinel() {
+				return last
+			}
+
+			node = node.right
+		} else {
+			if node.left.isSentinel() {
+				return node
+			}
+
+			last = node
+			node = node.left
+		}
+	}
+}
+
+// lookupUpperBoundKey 最后一个小于等于key的node
+func (t *Tree) lookupUpperBoundKey(key interface{}) *TreeNode {
+	var last *TreeNode
+	node := t.root
+
+	for {
+		res := t.comparator.Compare(node.GetKey(), key)
+		if res == utils.Et {
+			return node
+		}
+
+		if res == utils.Lt {
+			if node.right.isSentinel() {
+				return node
+			}
+
+			last = node
+			node = node.right
+		} else {
+			if node.left.isSentinel() {
+				return last
+			}
+
+			node = node.left
+		}
+	}
 }

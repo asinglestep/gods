@@ -31,51 +31,51 @@ func Test_AvlTreeInsert(t *testing.T) {
 
 	fmt.Println("插入20")
 	tree.Insert(20, 20)
-	tree.PrintAvlTree()
+	fmt.Println(tree)
 
 	fmt.Println("\n插入40")
 	tree.Insert(40, 40)
-	tree.PrintAvlTree()
+	fmt.Println(tree)
 
 	fmt.Println("\n插入60")
 	tree.Insert(60, 60) // test case 2.3
-	tree.PrintAvlTree()
+	fmt.Println(tree)
 
 	fmt.Println("\n插入80")
 	tree.Insert(80, 80)
-	tree.PrintAvlTree()
+	fmt.Println(tree)
 
 	fmt.Println("\n插入70")
 	tree.Insert(70, 70) // test case 2.4
-	tree.PrintAvlTree()
+	fmt.Println(tree)
 
 	fmt.Println("\n插入15")
 	tree.Insert(15, 15)
-	tree.PrintAvlTree()
+	fmt.Println(tree)
 
 	fmt.Println("\n插入18")
 	tree.Insert(18, 18) // test case 2.2
-	tree.PrintAvlTree()
+	fmt.Println(tree)
 
 	fmt.Println("\n插入10")
 	tree.Insert(10, 10)
-	tree.PrintAvlTree()
+	fmt.Println(tree)
 
 	fmt.Println("\n插入5")
 	tree.Insert(5, 5) // test case 2.1
-	tree.PrintAvlTree()
+	fmt.Println(tree)
 
 	// fmt.Printf("插入测试\n")
 	// fmt.Printf("\n输入数组: \n")
 	// fmt.Println("[20, 40, 60, 80, 70, 15, 18, 10, 5]")
 	// fmt.Printf("\n中序遍历结果: \n")
-	// tree.PrintAvlTree()
+	// fmt.Println(tree)
 	// if err := tree.Dot(); err != nil {
 	// 	fmt.Printf("Dot Error %v\n", err)
 	// }
-	// fmt.Printf("\n测试结果是否正确: %v\n", tree.VerifAvlTree())
+	// fmt.Printf("\n测试结果是否正确: %v\n", tree.Verify())
 
-	if !tree.VerifAvlTree() {
+	if !tree.Verify() {
 		t.Fatal("Test_AvlTreeInsert err")
 	}
 
@@ -106,10 +106,10 @@ func Test_AvlTreeRandInsert(t *testing.T) {
 	}
 
 	// fmt.Printf("\n中序遍历结果: \n")
-	// tree.PrintAvlTree()
-	// fmt.Printf("\n测试结果是否正确: %v\n", tree.VerifAvlTree())
+	// fmt.Println(tree)
+	// fmt.Printf("\n测试结果是否正确: %v\n", tree.Verify())
 
-	if !tree.VerifAvlTree() {
+	if !tree.Verify() {
 		t.Fatal("Test_AvlTreeRandInsert err")
 	}
 
@@ -137,51 +137,7 @@ func Test_AvlTreeDelete(t *testing.T) {
 	tree.Insert(10, 10)
 	tree.Insert(5, 5)
 	fmt.Println("avl树:")
-	tree.PrintAvlTree()
-
-	fmt.Println("\n删除15")
-	tree.Delete(15)
-	tree.PrintAvlTree()
-
-	fmt.Println("\n删除20")
-	tree.Delete(20) // test case 2.1.2
-	tree.PrintAvlTree()
-
-	fmt.Println("\n删除5")
-	tree.Delete(5)
-	tree.PrintAvlTree()
-
-	fmt.Println("\n删除18")
-	tree.Delete(18)
-	tree.PrintAvlTree()
-
-	fmt.Println("\n删除10")
-	tree.Delete(10) // test case 2.2.2
-	tree.PrintAvlTree()
-
-	fmt.Println("\n删除80")
-	tree.Delete(80) // test case 2.1.1
-	tree.PrintAvlTree()
-
-	fmt.Println("\n插入65")
-	tree.Insert(65, 65)
-	tree.PrintAvlTree()
-
-	fmt.Println("\n删除40")
-	tree.Delete(40) // test case 2.2.1
-	tree.PrintAvlTree()
-
-	fmt.Println("\n删除65")
-	tree.Delete(65)
-	tree.PrintAvlTree()
-
-	fmt.Println("\n删除70")
-	tree.Delete(70)
-	tree.PrintAvlTree()
-
-	fmt.Println("\n删除60")
-	tree.Delete(60)
-	tree.PrintAvlTree()
+	fmt.Println(tree)
 }
 
 func Test_AvlTreeRandDelete(t *testing.T) {
@@ -195,11 +151,11 @@ func Test_AvlTreeRandDelete(t *testing.T) {
 		tree.Insert(v, v)
 	}
 
-	if !tree.VerifAvlTree() {
+	if !tree.Verify() {
 		t.Fatalf("Test_AvlTreeRandDelete insert err, array %v\n", array)
 	}
 
-	// tree.PrintAvlTree()
+	// fmt.Println(tree)
 
 	dArray := rand.New(rand.NewSource(time.Now().UnixNano())).Perm(num / 2)
 	// dArray = []int{2, 3, 4, 1, 0}
@@ -207,10 +163,10 @@ func Test_AvlTreeRandDelete(t *testing.T) {
 	for _, v := range dArray {
 		// fmt.Printf("删除%v\n", v)
 		tree.Delete(v)
-		// tree.PrintAvlTree()
+		// fmt.Println(tree)
 	}
 
-	if !tree.VerifAvlTree() {
+	if !tree.Verify() {
 		t.Fatalf("Test_AvlTreeRandDelete delete err, array %v\n", dArray)
 	}
 
@@ -225,30 +181,6 @@ func Test_AvlTreeRandDelete(t *testing.T) {
 	}
 }
 
-func Test_AvlTreeSearch(t *testing.T) {
-	tree := NewTree(avltreeComparator{})
-
-	tree.Insert(20, 20)
-	tree.Insert(40, 40)
-	tree.Insert(60, 60)
-	tree.Insert(80, 80)
-	tree.Insert(70, 70)
-	tree.Insert(15, 15)
-	tree.Insert(18, 18)
-	tree.Insert(10, 10)
-	tree.Insert(5, 5)
-
-	node := tree.Search(10)
-	if node == nil || node.GetKey().(int) != 10 {
-		t.Fatalf("查找错误: 查找节点%v\n", 10)
-	}
-
-	node = tree.Search(11)
-	if node != nil {
-		t.Fatalf("查找错误: 查找节点%v\n", 11)
-	}
-}
-
 func Test_AvlTreeRandSearch(t *testing.T) {
 	tree := NewTree(avltreeComparator{})
 	var num = 1000000
@@ -259,7 +191,7 @@ func Test_AvlTreeRandSearch(t *testing.T) {
 		tree.Insert(v, v)
 	}
 
-	// if !tree.VerifAvlTree() {
+	// if !tree.Verify() {
 	// 	fmt.Printf("\n插入 - 测试结果是否正确: %v\n", array)
 	// } else {
 	// 	fmt.Println("插入正确")
@@ -284,7 +216,7 @@ func Test_AvlTreeSearchRangeLowerBoundKeyWithLimit(t *testing.T) {
 	tree.Insert(18, 18)
 	tree.Insert(10, 10)
 	tree.Insert(5, 5)
-	// tree.PrintAvlTree()
+	// fmt.Println(tree)
 
 	nodeList := tree.SearchRangeLowerBoundKeyWithLimit(7, 5)
 	// for i, node := range nodeList {
@@ -294,8 +226,12 @@ func Test_AvlTreeSearchRangeLowerBoundKeyWithLimit(t *testing.T) {
 	verifArr := []int{10, 15, 18, 20, 40}
 	for i, v := range nodeList {
 		if v.GetKey().(int) != verifArr[i] {
-			t.Fatal("Test_AvlTreeSearchRangeLowerBoundKeyWithLimit err")
+			t.Fatalf("Test_AvlTreeSearchRangeLowerBoundKeyWithLimit err: v.GetKey().(int) != verifArr[%d], v.GetKey().(int): %v, verifArr[%d]: %v\n", i, v.GetKey().(int), i, verifArr[i])
 		}
+	}
+
+	if len(nodeList) != len(verifArr) {
+		t.Fatalf("Test_AvlTreeSearchRangeLowerBoundKeyWithLimit err: len(nodeList) != len(verifArr), len(nodeList): %v, len(verifArr): %v\n", len(nodeList), len(verifArr))
 	}
 }
 
@@ -309,7 +245,7 @@ func Test_AvlTreeRandSearchRangeLowerBoundKeyWithLimit(t *testing.T) {
 		tree.Insert(v, v)
 	}
 
-	// if !tree.VerifAvlTree() {
+	// if !tree.Verify() {
 	// 	fmt.Printf("\n插入 - 测试结果是否正确: %v\n", array)
 	// } else {
 	// 	fmt.Println("插入正确")
@@ -345,8 +281,12 @@ func Test_AvlTreeSearchRangeUpperBoundKeyWithLimit(t *testing.T) {
 	verifArr := []int{18, 20, 40, 60, 70}
 	for i, v := range nodeList {
 		if v.GetKey().(int) != verifArr[i] {
-			t.Fatal("Test_AvlTreeSearchRangeUpperBoundKeyWithLimit err")
+			t.Fatalf("Test_AvlTreeSearchRangeUpperBoundKeyWithLimit err: v.GetKey().(int) != verifArr[%d], v.GetKey().(int): %v, verifArr[%d]: %v\n", i, v.GetKey().(int), i, verifArr[i])
 		}
+	}
+
+	if len(nodeList) != len(verifArr) {
+		t.Fatalf("Test_AvlTreeSearchRangeUpperBoundKeyWithLimit err: len(nodeList) != len(verifArr), len(nodeList): %v, len(verifArr): %v\n", len(nodeList), len(verifArr))
 	}
 }
 
@@ -360,7 +300,7 @@ func Test_AvlTreeRandSearchRangeUpperBoundKeyWithLimit(t *testing.T) {
 		tree.Insert(v, v)
 	}
 
-	// if !tree.VerifAvlTree() {
+	// if !tree.Verify() {
 	// 	fmt.Printf("\n插入 - 测试结果是否正确: %v\n", array)
 	// } else {
 	// 	fmt.Println("插入正确")
@@ -396,7 +336,11 @@ func Test_AvlTreeSearchRange(t *testing.T) {
 	verifArr := []int{60, 70, 80}
 	for i, v := range nodeList {
 		if v.GetKey().(int) != verifArr[i] {
-			t.Fatal("Test_AvlTreeSearchRange err")
+			t.Fatalf("Test_AvlTreeSearchRange err: v.GetKey().(int) != verifArr[%d],  v.GetKey().(int): %v, verifArr[%d]: %v\n", i, v.GetKey().(int), i, verifArr[i])
 		}
+	}
+
+	if len(nodeList) != len(verifArr) {
+		t.Fatalf("Test_AvlTreeSearchRange err: len(nodeList) != len(verifArr), len(nodeList): %v, len(verifArr): %v\n", len(nodeList), len(verifArr))
 	}
 }
