@@ -1,6 +1,7 @@
 package treap
 
 import (
+	"bytes"
 	"container/list"
 	"fmt"
 	"os/exec"
@@ -125,57 +126,94 @@ func (t *Tree) deleteNode(node *TreeNode) {
 
 // Search 查找
 func (t *Tree) Search(key interface{}) *TreeNode {
-	node := t.root
+	return t.lookup(key)
+}
 
-	for !node.isSentinel() {
-		res := t.comparator.Compare(node.GetKey(), key)
-		if res == utils.Et {
-			return node
+// SearchRange 查找key在[min, max]之间的节点
+func (t *Tree) SearchRange(min, max interface{}) []*TreeNode {
+	list := []*TreeNode{}
+
+	iter := NewIteratorWithNode(t, t.lookupLowerBoundKey(min))
+	for iter.Next() {
+		if t.comparator.Compare(iter.GetKey(), max) == utils.Gt {
+			break
 		}
 
-		if res == utils.Lt {
-			node = node.right
+		list = append(list, iter.node)
+	}
+
+	return list
+}
+
+// SearchRangeLowerBoundKeyWithLimit 查找大于等于key的limit个节点
+func (t *Tree) SearchRangeLowerBoundKeyWithLimit(key interface{}, limit int64) []*TreeNode {
+	var count int64
+	list := make([]*TreeNode, 0, limit)
+
+	iter := NewIteratorWithNode(t, t.lookupLowerBoundKey(key))
+	for iter.Next() {
+		if count == limit {
+			break
+		}
+
+		list = append(list, iter.node)
+		count++
+	}
+
+	return list
+}
+
+// SearchRangeUpperBoundKeyWithLimit 找到小于等于key的limit个节点
+func (t *Tree) SearchRangeUpperBoundKeyWithLimit(key interface{}, limit int64) []*TreeNode {
+	var count int64
+	list := make([]*TreeNode, 0, limit)
+
+	iter := NewIteratorWithNode(t, t.lookupUpperBoundKey(key))
+	for iter.Prev() {
+		if count == limit {
+			break
+		}
+
+		list = append(list, iter.node)
+		count++
+	}
+
+	return reverse(list)
+}
+
+// String String
+func (t *Tree) String() string {
+	buffer := bytes.Buffer{}
+	node := t.root
+	stack := list.New()
+
+	for !node.isSentinel() {
+		stack.PushBack(node)
+		node = node.left
+	}
+
+	for stack.Len() != 0 {
+		e := stack.Remove(stack.Back())
+		node = e.(*TreeNode)
+
+		if node.parent != nil {
+			buffer.WriteString(fmt.Sprintf("节点为: %v, \t节点的优先级为: %v, \t父节点为: %v\n", node.GetKey(), node.priority, node.parent.GetKey()))
 		} else {
+			buffer.WriteString(fmt.Sprintf("节点为: %v, \t节点的优先级为: %v, \t此节点为根节点\n", node.GetKey(), node.priority))
+		}
+
+		node = node.right
+		for !node.isSentinel() {
+			stack.PushBack(node)
 			node = node.left
 		}
 	}
 
-	return nil
+	return buffer.String()
 }
 
-// updateChild 更新父节点的子节点
-func (t *Tree) updateChildren(parent, children *TreeNode, isLeft bool) {
-	if parent == nil {
-		t.root = children
-	} else if isLeft {
-		parent.left = children
-	} else {
-		parent.right = children
-	}
-}
-
-// minimum 中序遍历后，树的最小节点
-func (t *Tree) minimum() *TreeNode {
-	return t.root.minimum()
-}
-
-// maximum 中序遍历后，树的最大节点
-func (t *Tree) maximum() *TreeNode {
-	return t.root.maximum()
-}
-
-// rand 生成随机数 xorshift
-func (t *Tree) rand() uint32 {
-	x := t.seed
-	x ^= x << 13
-	x ^= x >> 17
-	x ^= x << 5
-	t.seed = x
-	return x
-}
-
-// VerifTreap 验证是否是treap
-func (t *Tree) VerifTreap() bool {
+// Verify 验证是否是treap
+func (t *Tree) Verify() bool {
 	node := t.root
 	entries := make([]*utils.Entry, 0)
 	stack := list.New()
@@ -287,4 +325,111 @@ func (t *Tree) Dot() error {
 	}
 
 	return nil
+}
+
+// updateChild 更新父节点的子节点
+func (t *Tree) updateChildren(parent, children *TreeNode, isLeft bool) {
+	if parent == nil {
+		t.root = children
+	} else if isLeft {
+		parent.left = children
+	} else {
+		parent.right = children
+	}
+}
+
+// minimum 中序遍历后，树的最小节点
+func (t *Tree) minimum() *TreeNode {
+	return t.root.minimum()
+}
+
+// maximum 中序遍历后，树的最大节点
+func (t *Tree) maximum() *TreeNode {
+	return t.root.maximum()
+}
+
+// rand 生成随机数 xorshift
+func (t *Tree) rand() uint32 {
+	x := t.seed
+	x ^= x << 13
+	x ^= x >> 17
+	x ^= x << 5
+	t.seed = x
+	return x
+}
+
+// lookup 查找key所在的节点
+func (t *Tree) lookup(key interface{}) *TreeNode {
+	node := t.root
+
+	for !node.isSentinel() {
+		res := t.comparator.Compare(node.GetKey(), key)
+		if res == utils.Et {
+			return node
+		}
+
+		if res == utils.Lt {
+			node = node.right
+		} else {
+			node = node.left
+		}
+	}
+
+	return nil
+}
+
+// lookupLowerBoundKey 查找第一个大于等于key的node
+func (t *Tree) lookupLowerBoundKey(key interface{}) *TreeNode {
+	var last *TreeNode
+	node := t.root
+
+	for {
+		res := t.comparator.Compare(node.GetKey(), key)
+		if res == utils.Et {
+			return node
+		}
+
+		if res == utils.Lt {
+			if node.right.isSentinel() {
+				return last
+			}
+
+			node = node.right
+		} else {
+			if node.left.isSentinel() {
+				return node
+			}
+
+			last = node
+			node = node.left
+		}
+	}
+}
+
+// lookupUpperBoundKey 最后一个小于等于key的node
+func (t *Tree) lookupUpperBoundKey(key interface{}) *TreeNode {
+	var last *TreeNode
+	node := t.root
+
+	for {
+		res := t.comparator.Compare(node.GetKey(), key)
+		if res == utils.Et {
+			return node
+		}
+
+		if res == utils.Lt {
+			if node.right.isSentinel() {
+				return node
+			}
+
+			last = node
+			node = node.right
+		} else {
+			if node.left.isSentinel() {
+				return last
+			}
+
+			node = node.left
+		}
+	}
 }

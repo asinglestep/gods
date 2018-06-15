@@ -202,3 +202,14 @@ func (node *TreeNode) dot() (dNode *dot.Node, dEdge *dot.Edge) {
 
 	return dNode, dEdge
 }
+
+// reverse 倒序
+func reverse(list []*TreeNode) []*TreeNode {
+	listLen := len(list)
+
+	for i := 0; i < listLen/2; i++ {
+		list[i], list[listLen-i-1] = list[listLen-i-1], list[i]
+	}
+
+	return list
+}
