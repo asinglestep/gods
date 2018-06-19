@@ -5,14 +5,15 @@ import (
 	"strings"
 
 	dot "github.com/asinglestep/godot"
+	"github.com/asinglestep/gods/utils"
 )
 
 // TreeLeaf TreeLeaf
 type TreeLeaf struct {
-	parent  *TreeNode // 指向父节点
-	entries []*Entry  // 数据
-	next    *TreeLeaf // 指向下一个叶子节点的指针
-	prev    *TreeLeaf // 指向上一个叶子节点的指针
+	parent  *TreeNode      // 指向父节点
+	entries []*utils.Entry // 数据
+	next    *TreeLeaf      // 指向下一个叶子节点的指针
+	prev    *TreeLeaf      // 指向上一个叶子节点的指针
 }
 
 // NewTreeLeaf NewTreeLeaf
@@ -31,16 +32,11 @@ func (leaf *TreeLeaf) split(t *Tree) iNode {
 	parent := leaf.parent
 	if parent == nil {
 		// 根节点为满的
-		parent = NewTreeNode()
-		parent.childrens = make([]iNode, 1)
-		parent.childrens[0] = leaf
-		parent.keys = make([]Key, 1)
-		parent.keys[0] = leaf.entries[0].Key
-		t.root = parent
+		parent = t.splitRootNode(leaf, leaf.entries[0].GetKey())
 	}
 
 	// 满节点时有2t个key，所以中间key的位置为t
-	mid := t.minKeyN
+	mid := t.minKeys
 	midEntry := leaf.entries[mid]
 
 	// 分裂成2个新节点，左右节点各占t个key，t个children
@@ -49,7 +45,7 @@ func (leaf *TreeLeaf) split(t *Tree) iNode {
 	right.parent = parent
 	right.next = leaf.next
 	right.prev = leaf
-	right.entries = make([]*Entry, mid)
+	right.entries = make([]*utils.Entry, mid)
 	for i := range right.entries {
 		right.entries[i] = leaf.entries[mid+i]
 	}
@@ -60,14 +56,14 @@ func (leaf *TreeLeaf) split(t *Tree) iNode {
 	leaf.entries = leaf.entries[:mid]
 
 	// 找到key在父节点中的位置
-	pos := parent.findKeyPosition(midEntry.Key)
+	pos, _ := parent.findKeyPosition(t.comparator, midEntry.GetKey())
 
 	// 修改父节点的keys，childrens
 	// 将key插入到父节点中
 	parentKeysLen := len(parent.keys)
-	newKeys := make([]Key, parentKeysLen+1)
+	newKeys := make([]interface{}, parentKeysLen+1)
 	copy(newKeys, parent.keys[:pos])
-	newKeys[pos] = midEntry.Key
+	newKeys[pos] = midEntry.GetKey()
 	copy(newKeys[pos+1:], parent.keys[pos:])
 	parent.keys = newKeys
 
@@ -87,7 +83,7 @@ func (leaf *TreeLeaf) adjacent(t *Tree) (adj iNode) {
 	parent := leaf.parent
 
 	// 在父节点中查找leaf.entries[0].Key
-	pos := parent.findKeyPosition(leaf.entries[0].Key)
+	pos, _ := parent.findKeyPosition(t.comparator, leaf.entries[0].GetKey())
 	switch pos {
 	case len(parent.keys):
 		// parent的key都小于leaf.entries[0].Key，该节点的位置为pos-1
@@ -100,7 +96,7 @@ func (leaf *TreeLeaf) adjacent(t *Tree) (adj iNode) {
 
 	default:
 		var left, right iNode
-		if parent.keys[pos] == leaf.entries[0].Key {
+		if parent.keys[pos] == leaf.entries[0].GetKey() {
 			if pos == len(parent.keys)-1 {
 				// 最后一个节点
 				adj = parent.childrens[pos-1]
@@ -224,25 +220,29 @@ func (leaf *TreeLeaf) getParent() *TreeNode {
 	return leaf.parent
 }
 
-// findKeyPosition 在节点中查找第一个大于等于key的位置，没有比key大的节点，则返回此节点最后一个key
-func (leaf *TreeLeaf) findKeyPosition(key Key) int {
+// findKeyPosition 在节点中查找第一个大于等于key的位置，没有比key大的，则返回node.entries的长度
+func (leaf *TreeLeaf) findKeyPosition(comparator utils.Comparator, key interface{}) (pos int, bFound bool) {
 	i, j := 0, len(leaf.entries)
 
 	for i < j {
 		h := int(uint(i+j) >> 1)
-		if leaf.entries[h].Key.less(key) {
+		if comparator.Compare(leaf.entries[h].GetKey(), key) == utils.Lt {
 			i = h + 1
 		} else {
 			j = h
 		}
 	}
 
-	return i
+	if comparator.Compare(node.keys[i], key) == utils.Et {
+		bFound = true
+	}
+
+	return i, bFound
 }
 
 // getPosKey 获取pos位置的key
-func (leaf *TreeLeaf) getPosKey(pos int) Key {
-	return leaf.entries[pos].Key
+func (leaf *TreeLeaf) getPosKey(pos int) interface{} {
+	return leaf.entries[pos].GetKey()
 }
 
 // getKeys 获取key的数量
@@ -319,4 +319,13 @@ func (leaf *TreeLeaf) dot(nName string, pName string) (dNode *dot.Node, dEdge *d
 	}
 
 	return dNode, dEdge
+}
+
+// insertEntry 将新的entry插入到pos位置上
+func (leaf *TreeLeaf) insertEntry(entry *utils.Entry, pos int) {
+	newEntries := make([]*Entry, len(leaf.entries)+1)
+	newEntries[pos] = entry
+	copy(newEntries[:pos], leaf.entries[:pos])
+	copy(newEntries[pos+1:], leaf.entries[pos:])
+	leaf.entries = newEntries
 }

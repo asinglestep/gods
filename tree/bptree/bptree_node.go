@@ -5,18 +5,23 @@ import (
 	"strings"
 
 	dot "github.com/asinglestep/godot"
+	"github.com/asinglestep/gods/utils"
 )
 
 // TreeNode TreeNode
 type TreeNode struct {
-	parent    *TreeNode // 指向父节点
-	childrens []iNode   // 子节点
-	keys      []Key     // 关键字
+	parent    *TreeNode     // 指向父节点
+	childrens []iNode       // 子节点
+	keys      []interface{} // 关键字
 }
 
 // NewTreeNode NewTreeNode
-func NewTreeNode() *TreeNode {
+func NewTreeNode(parent *TreeNode, childrens []iNode, keys []interface{}) *TreeNode {
 	node := &TreeNode{}
+	node.parent = parent
+	node.childrens = childrens
+	node.keys = keys
+
 	return node
 }
 
@@ -30,43 +35,32 @@ func (node *TreeNode) split(t *Tree) iNode {
 	parent := node.parent
 	if parent == nil {
 		// 根节点为满的
-		parent = NewTreeNode()
-		parent.childrens = make([]iNode, 1)
-		parent.childrens[0] = node
-		parent.keys = make([]Key, 1)
-		parent.keys[0] = node.keys[0]
-		t.root = parent
+		parent = t.splitRootNode(node, node.keys[0])
 	}
 
-	// 满节点时有2t-1个key，所以中间key的位置为t-1
-	mid := t.minKeyN
+	// 满节点时有2t个key，所以中间key的位置为t
+	mid := t.minKeys
 	midKey := node.keys[mid]
 
 	// 分裂成2个新节点，左右节点各包含t个key，t个children
 	// 新的右节点，修改父节点，keys，childrens
-	right := &TreeNode{}
-	right.parent = parent
-	right.keys = make([]Key, mid)
-	for i := range right.keys {
-		right.keys[i] = node.keys[mid+i]
-	}
-
-	right.childrens = make([]iNode, mid)
-	for i := range right.childrens {
-		right.childrens[i] = node.childrens[mid+i]
-		right.childrens[i].setParent(right)
-	}
+	// rightKeys := make([]interface{}, mid)
+	// copy(rKeys[:], node.keys[mid:])
+	// rightChildrens := make([]iNode, mid)
+	// copy(rightChildrens[:], node.childrens[mid:])
+	right := NewTreeNode(parent, node.keys[mid:], node.childrens[mid:])
+	right.updateChildrensParent()
 
 	// 新的左节点，修改父节点，keys，childrens
-	node.parent = parent
-	node.keys = node.keys[:mid]
-	node.childrens = node.childrens[:mid]
-	for i := range node.childrens {
-		node.childrens[i].setParent(node)
-	}
+	// node.parent = parent
+	// node.keys = node.keys[:mid]
+	// node.childrens = node.childrens[:mid]
+	// node.updateChildrensParent()
+	left := NewTreeNode(parent, node.keys[:mid], node.childrens[:mid])
+	left.updateChildrensParent()
 
 	// 找到key在父节点中的位置
-	pos := parent.findKeyPosition(midKey)
+	pos, _ := parent.findKeyPosition(t.comparator, midKey)
 
 	// 修改父节点的keys，childrens
 	// 将key插入到父节点中
@@ -250,24 +244,30 @@ func (node *TreeNode) getParent() *TreeNode {
 	return node.parent
 }
 
-// findKeyPosition 在节点中查找第一个大于等于key的位置，没有比key大的节点，则返回此节点最后一个key
-func (node *TreeNode) findKeyPosition(key Key) int {
+// findKeyPosition
+// 在节点中查找第一个大于等于key的位置
+// 没有比key大的，则返回node.keys的长度
+func (node *TreeNode) findKeyPosition(comparator utils.Comparator, key interface{}) (pos int, bFound bool) {
 	i, j := 0, len(node.keys)
 
 	for i < j {
 		h := int(uint(i+j) >> 1)
-		if node.keys[h].less(key) {
+		if comparator.Compare(node.keys[h], key) == utils.Lt {
 			i = h + 1
 		} else {
 			j = h
 		}
 	}
 
-	return i
+	if comparator.Compare(node.keys[i], key) == utils.Et {
+		bFound = true
+	}
+
+	return i, bFound
 }
 
 // getPosKey 获取pos位置的key
-func (node *TreeNode) getPosKey(pos int) Key {
+func (node *TreeNode) getPosKey(pos int) interface{} {
 	return node.keys[pos]
 }
 
@@ -370,4 +370,40 @@ func (node *TreeNode) dot(nName string, pName string) (dNode *dot.Node, dEdge *d
 	}
 
 	return dNode, dEdge
+}
+
+// getChildrenAndUpdateFirstKeyIfNeed
+// 如果pos等于0，则更新第一个key，返回pos位置的子节点
+// 如果pos大于0，则返回pos-1位置的子节点
+func (node *TreeNode) getChildrenAndUpdateFirstKeyIfNeed(pos int) iNode {
+	if pos == 0 {
+		// 比第一个关键字还小
+		// 替换node.keys[0]
+		node.keys[0] = key
+		return node.childrens[0]
+	}
+
+	return node.childrens[pos-1]
+}
+
+// updateChildrensParent 更新的node的childrens的父节点
+func (node *TreeNode) updateChildrensParent() {
+	for i := range node.childrens {
+		node.childrens[i].setParent(node)
+	}
+}
+
+// updateKeys 更新node.keys
+func (node *TreeNode) updateKeys() {
+	parentKeysLen := len(parent.keys)
+	newKeys := make([]Key, parentKeysLen+1)
+	copy(newKeys, parent.keys[:pos])
+	newKeys[pos] = midKey
+	copy(newKeys[pos+1:], parent.keys[pos:])
+	parent.keys = newKeys
+}
+
+// updateChildrens 更新node.childrens
+func (node *TreeNode) updateChildrens() {
+
 }
