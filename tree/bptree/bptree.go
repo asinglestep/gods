@@ -85,6 +85,7 @@ type Tree struct {
 	comparator utils.Comparator
 	maxKeys    int
 	minKeys    int
+	size       int
 }
 
 // NewTree NewTree
@@ -126,6 +127,7 @@ func (t *Tree) Insert(key, val interface{}) {
 	leaf := iNode.(*TreeLeaf)
 	// 插入新的key
 	leaf.insertEntry(utils.NewEntry(key, val), keyPos)
+	t.size++
 }
 
 // Delete 删除
@@ -178,6 +180,7 @@ func (t *Tree) deleteKey(key interface{}) {
 	leaf := iNode.(*TreeLeaf)
 	leaf.entries = append(leaf.entries[:pos], leaf.entries[pos+1:]...)
 	t.deleteFixUp(leaf, key)
+	t.size--
 }
 
 // deleteFixUp 删除修复
@@ -389,6 +392,17 @@ func (t *Tree) Verify() bool {
 				queue.PushBack(v)
 			}
 		}
+	}
+
+	iter := NewIterator(t)
+	keys := make([]interface{}, 0)
+	for iter.Next() {
+		keys = append(keys, iter.GetKey())
+	}
+
+	if len(keys) != t.size {
+		fmt.Printf("len(keys) != t.size, len(keys): %v, t.size: %v\n", len(keys), t.size)
+		return false
 	}
 
 	return true
