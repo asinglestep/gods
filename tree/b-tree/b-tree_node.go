@@ -15,10 +15,9 @@ type TreeNode struct {
 	entries   []*utils.Entry // 节点数据
 }
 
-// NewLeafNode 叶子节点
-func NewLeafNode() *TreeNode {
+// NewNode NewNode
+func NewNode() *TreeNode {
 	n := &TreeNode{}
-	n.childrens = nil
 
 	return n
 }
@@ -49,7 +48,11 @@ func (node *TreeNode) updateChildrensParent(parent *TreeNode) {
 }
 
 // findLowerBoundKeyPosition 在节点中查找第一个大于等于key的位置，没有比key大的，则返回node.entries的长度
-func (node *TreeNode) findLowerBoundKeyPosition(comparator utils.Comparator, key interface{}) int {
+func (node *TreeNode) findLowerBoundKeyPosition(comparator utils.Comparator, key interface{}) (pos int, bFound bool) {
+	if len(node.entries) == 0 {
+		return 0, false
+	}
+
 	i, j := 0, len(node.entries)
 
 	for i < j {
@@ -61,7 +64,15 @@ func (node *TreeNode) findLowerBoundKeyPosition(comparator utils.Comparator, key
 		}
 	}
 
-	return i
+	if i == len(node.entries) {
+		return i, false
+	}
+
+	if comparator.Compare(node.entries[i].GetKey(), key) == utils.Et {
+		return i, true
+	}
+
+	return i, false
 }
 
 // findPrecursor 找到pos位置的前驱节点
@@ -170,7 +181,7 @@ func (node *TreeNode) dot(comparator utils.Comparator, nName string, pName strin
 
 	// 添加一个edge
 	if node.parent != nil {
-		pos := node.parent.findLowerBoundKeyPosition(comparator, node.entries[0].GetKey())
+		pos, _ := node.parent.findLowerBoundKeyPosition(comparator, node.entries[0].GetKey())
 		dEdge = &dot.Edge{}
 		dEdge.Src = pName
 		dEdge.SrcPort = ":f" + fmt.Sprintf("%d", pos)

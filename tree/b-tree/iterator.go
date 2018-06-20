@@ -28,7 +28,7 @@ func NewIteratorLowerBoundKey(tree *Tree, key interface{}) *Iterator {
 	iter := &Iterator{}
 	iter.tree = tree
 
-	node, pos := tree.lookupLowerBoundKey(tree.root, key)
+	node, pos, _ := tree.lookup(tree.root, key)
 	if node.isLeaf() {
 		iter.node = node
 		iter.entryPos = pos
@@ -59,7 +59,7 @@ func (iter *Iterator) Next() bool {
 
 	parent := iter.node.parent
 	for parent != nil {
-		pos := parent.findLowerBoundKeyPosition(iter.tree.comparator, iter.entry.GetKey())
+		pos, _ := parent.findLowerBoundKeyPosition(iter.tree.comparator, iter.entry.GetKey())
 		if pos+1 < len(parent.childrens) {
 			iter.entry = parent.entries[pos]
 			iter.node = parent.childrens[pos+1].minimum()

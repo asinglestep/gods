@@ -29,7 +29,7 @@ func NewTree(t int, comparator utils.Comparator) *Tree {
 	tree := &Tree{}
 	tree.maxEntry = 2*t - 1
 	tree.minEntry = t - 1
-	tree.root = NewLeafNode()
+	tree.root = NewNode()
 	tree.comparator = comparator
 
 	return tree
@@ -51,8 +51,7 @@ func (t *Tree) Insert(key, val interface{}) {
 		}
 
 		// 查找key在节点中的位置
-		keyPos = node.findLowerBoundKeyPosition(t.comparator, key)
-
+		keyPos, _ = node.findLowerBoundKeyPosition(t.comparator, key)
 		// 如果是叶子节点，退出
 		if node.isLeaf() {
 			break
@@ -75,11 +74,12 @@ func (t *Tree) Delete(key interface{}) {
 // deleteKey deleteKey
 func (t *Tree) deleteKey(key interface{}) {
 	pos := 0
-	var node = t.root
+	bFound := false
+	node := t.root
 
 	for {
-		node, pos = t.lookup(node, key)
-		if node == nil {
+		node, pos, bFound = t.lookup(node, key)
+		if !bFound {
 			// 没找到
 			return
 		}
@@ -140,8 +140,8 @@ func (t *Tree) deleteFixUp(node *TreeNode, key interface{}) {
 
 // Search 查找指定的key对应的Entry
 func (t *Tree) Search(key interface{}) *utils.Entry {
-	node, pos := t.lookup(t.root, key)
-	if node == nil {
+	node, pos, bFound := t.lookup(t.root, key)
+	if !bFound {
 		// 没找到
 		return nil
 	}
@@ -194,7 +194,7 @@ func (t *Tree) SearchRangeLowerBoundKeyWithLimit(key interface{}, limit int64) [
 // pos: 父节点中第一个大于等于key的位置
 // bBig: true - 相邻节点在右侧，false - 相邻节点在左侧
 func (t *Tree) getAdjacentNode(parent *TreeNode, key interface{}) (adjNode *TreeNode, pos int, bBig bool) {
-	pos = parent.findLowerBoundKeyPosition(t.comparator, key)
+	pos, _ = parent.findLowerBoundKeyPosition(t.comparator, key)
 	if pos == 0 || (pos != len(parent.entries) && len(parent.childrens[pos-1].entries) <= t.minEntry) {
 		// 第一个key 或者 key在parent节点上且左侧相邻节点的关键字小于t个，返回右侧相邻节点
 		adjNode = parent.childrens[pos+1]
@@ -291,10 +291,14 @@ func (t *Tree) moveCaseLeftAdjacentNode(parent *TreeNode, node *TreeNode, adjNod
 // pEntry: 父节点中和node、adjNode相关联的entry
 func (t *Tree) mergeNode(parent *TreeNode, node *TreeNode, adjNode *TreeNode, pos int, bBig bool) (pEntry *utils.Entry) {
 	if bBig {
-		pEntry = t.mergeCaseRightAdjacentNode(parent, node, adjNode, pos)
+		pEntry = parent.entries[pos]
+		// 相邻节点合并到node中
+		t.meregNode(node, adjNode, pEntry)
 	} else {
 		pos-- // 相邻节点在左侧，pos-1 为 父节点和node、adjNode相关的entry 所在的位置
-		pEntry = t.mergeCaseLeftAdjacentNode(parent, node, adjNode, pos)
+		pEntry = parent.entries[pos]
+		// node合并到相邻节点中
+		t.meregNode(adjNode, node, pEntry)
 	}
 
 	// 删除父节点key
@@ -304,60 +308,19 @@ func (t *Tree) mergeNode(parent *TreeNode, node *TreeNode, adjNode *TreeNode, po
 	return pEntry
 }
 
-// mergeCaseRightAdjacentNode 相邻节点在右侧
-//
-// @param
-// parent: 父节点
-// node: node
-// adjNode: node的相邻节点
-// pos: 父节点中第一个大于等于key的位置
-//
-// @retrun
-// pEntry: 父节点中和node、adjNode相关联的entry
-func (t *Tree) mergeCaseRightAdjacentNode(parent *TreeNode, node *TreeNode, adjNode *TreeNode, pos int) *utils.Entry {
-	// 合并node、adjNode和pEntry
-	pEntry := parent.entries[pos]
-	node.entries = append(node.entries, pEntry)
-	node.entries = append(node.entries, adjNode.entries...)
+// meregNode src、entry合并到dst中
+func (t *Tree) meregNode(dst *TreeNode, src *TreeNode, entry *utils.Entry) {
+	dst.entries = append(dst.entries, entry)
+	dst.entries = append(dst.entries, src.entries...)
 
-	if !node.isLeaf() {
-		// 合并node、adjNode的子节点
-		node.childrens = append(node.childrens, adjNode.childrens...)
-		// 改变adjNode的子节点的父节点
-		adjNode.updateChildrensParent(node)
+	if !dst.isLeaf() {
+		dst.childrens = append(dst.childrens, src.childrens...)
+		// 改变src的子节点的父节点
+		src.updateChildrensParent(dst)
 	}
 
-	// 删除adjNode
-	adjNode.free()
-	return pEntry
-}
-
-// mergeCaseLeftAdjacentNode 相邻节点在左侧
-//
-// @param
-// parent: 父节点
-// node: node
-// adjNode: node的相邻节点
-// pos: 父节点中第一个大于等于key的位置
-//
-// @retrun
-// pEntry: 父节点中和node、adjNode相关联的entry
-func (t *Tree) mergeCaseLeftAdjacentNode(parent *TreeNode, node *TreeNode, adjNode *TreeNode, pos int) *utils.Entry {
-	// 合并node、adjNode和pEntry
-	pEntry := parent.entries[pos]
-	adjNode.entries = append(adjNode.entries, pEntry)
-	adjNode.entries = append(adjNode.entries, node.entries...)
-
-	if !adjNode.isLeaf() {
-		// 合并node、adjNode的子节点
-		adjNode.childrens = append(adjNode.childrens, node.childrens...)
-		// 改变node的子节点的父节点
-		node.updateChildrensParent(adjNode)
-	}
-
-	// 删除node
-	node.free()
-	return pEntry
+	// 删除src
+	src.free()
 }
 
 // splitNode 分裂节点
@@ -385,7 +348,7 @@ func (t *Tree) splitNode(node *TreeNode) (left *TreeNode, right *TreeNode, midEn
 	midEntry = node.entries[mid]
 
 	// 找到midEntry.key在父节点中的位置
-	pos := parent.findLowerBoundKeyPosition(t.comparator, midEntry.GetKey())
+	pos, _ := parent.findLowerBoundKeyPosition(t.comparator, midEntry.GetKey())
 	// 将entry插入到父节点中
 	parent.insertEntry(midEntry, pos)
 
@@ -431,47 +394,19 @@ func (t *Tree) splitRootNode(node *TreeNode) *TreeNode {
 // @return
 // node: key所在的节点
 // pos: key在节点中的位置
-func (t *Tree) lookup(sNode *TreeNode, key interface{}) (node *TreeNode, pos int) {
+func (t *Tree) lookup(sNode *TreeNode, key interface{}) (node *TreeNode, pos int, bFound bool) {
 	node = sNode
 
 	for {
-		pos = node.findLowerBoundKeyPosition(t.comparator, key)
-		if pos != len(node.entries) && t.comparator.Compare(node.entries[pos].GetKey(), key) == utils.Et {
+		pos, bFound = node.findLowerBoundKeyPosition(t.comparator, key)
+		if bFound {
 			// 找到了
-			return node, pos
+			return node, pos, bFound
 		}
 
 		if node.isLeaf() {
 			// 没找到，退出
-			return nil, -1
-		}
-
-		node = node.childrens[pos]
-	}
-}
-
-// lookupLowerBoundKey 查找第一个大于等于key的entry所在的节点
-//
-// @param
-// sNode: 从sNode开始查找
-// key: 要查找的key
-//
-// @return
-// node: key所在的节点
-// pos: key在节点中的位置
-func (t *Tree) lookupLowerBoundKey(sNode *TreeNode, key interface{}) (node *TreeNode, pos int) {
-	node = sNode
-
-	for {
-		pos = node.findLowerBoundKeyPosition(t.comparator, key)
-		if pos != len(node.entries) && t.comparator.Compare(node.entries[pos].GetKey(), key) == utils.Et {
-			// 找到了
-			return node, pos
-		}
-
-		if node.isLeaf() {
-			// 没找到，退出
-			return node, pos
+			return node, pos, bFound
 		}
 
 		node = node.childrens[pos]
