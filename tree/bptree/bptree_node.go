@@ -288,13 +288,13 @@ func (node *TreeNode) verify(t *Tree) bool {
 		if v.isLeaf() {
 			l := v.(*TreeLeaf)
 			if t.comparator.Compare(l.entries[0].GetKey(), node.keys[i]) != utils.Et {
-				fmt.Printf("l.entries[0].Key != node.keys[i], l.entries[0].Key %v, node.keys[i] %v\n", l.entries[0].GetKey(), node.keys[i])
+				fmt.Printf("父节点的第%v个key不是其叶子节点的第一个key, 父节点第%v个key: %v, 叶子节点的第一个key: %v\n", i, i, node.keys[i], l.entries[0].GetKey())
 				return false
 			}
 		} else {
 			n := v.(*TreeNode)
 			if t.comparator.Compare(n.keys[0], node.keys[i]) != utils.Et {
-				fmt.Printf("n.keys[0] != node.keys[i], n.keys[0] %v, node.keys[i] %v\n", n.keys[0], node.keys[i])
+				fmt.Printf("父节点的第%v个key不是其子节点的第一个key, 父节点第%v个key: %v, 子节点的第一个key: %v\n", i, i, node.keys[i], n.keys[0])
 				return false
 			}
 		}
