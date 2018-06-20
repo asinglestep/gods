@@ -16,18 +16,10 @@ type TreeNode struct {
 }
 
 // NewTreeNode NewTreeNode
-func NewTreeNode(parent *TreeNode, childrens []iNode, keys []interface{}) *TreeNode {
+func NewTreeNode() *TreeNode {
 	node := &TreeNode{}
-	node.parent = parent
-	node.childrens = childrens
-	node.keys = keys
 
 	return node
-}
-
-// String String
-func (node *TreeNode) String() string {
-	return fmt.Sprintf("内节点[%v]", node.keys)
 }
 
 // split 分裂节点
@@ -42,188 +34,150 @@ func (node *TreeNode) split(t *Tree) iNode {
 	mid := t.minKeys
 	midKey := node.keys[mid]
 
-	// 分裂成2个新节点，左右节点各包含t个key，t个children
 	// 新的右节点，修改父节点，keys，childrens
 	// rightKeys := make([]interface{}, mid)
 	// copy(rKeys[:], node.keys[mid:])
 	// rightChildrens := make([]iNode, mid)
 	// copy(rightChildrens[:], node.childrens[mid:])
-	right := NewTreeNode(parent, node.keys[mid:], node.childrens[mid:])
-	right.updateChildrensParent()
+	right := NewTreeNode()
+	right.parent = parent
+	right.keys = node.keys[mid:]
+	right.childrens = node.childrens[mid:]
+	right.updateChildrensParent(right)
 
 	// 新的左节点，修改父节点，keys，childrens
-	// node.parent = parent
-	// node.keys = node.keys[:mid]
-	// node.childrens = node.childrens[:mid]
-	// node.updateChildrensParent()
-	left := NewTreeNode(parent, node.keys[:mid], node.childrens[:mid])
-	left.updateChildrensParent()
+	node.parent = parent
+	node.keys = node.keys[:mid]
+	node.childrens = node.childrens[:mid]
 
 	// 找到key在父节点中的位置
 	pos, _ := parent.findKeyPosition(t.comparator, midKey)
-
-	// 修改父节点的keys，childrens
 	// 将key插入到父节点中
-	parentKeysLen := len(parent.keys)
-	newKeys := make([]Key, parentKeysLen+1)
-	copy(newKeys, parent.keys[:pos])
-	newKeys[pos] = midKey
-	copy(newKeys[pos+1:], parent.keys[pos:])
-	parent.keys = newKeys
-
-	// 将right节点加入到父节点中，keys和childrens数量相同
-	newCs := make([]iNode, parentKeysLen+1)
-	copy(newCs, parent.childrens[:pos])
-	newCs[pos] = right
-	copy(newCs[pos+1:], parent.childrens[pos:])
-	parent.childrens = newCs
-
-	// return node, right, midKey
+	parent.insertKey(midKey, pos)
+	// 将right节点加入到父节点中
+	parent.insertChildren(right, pos)
 	return parent
 }
 
 // adjacent 获取相邻节点
 func (node *TreeNode) adjacent(t *Tree) (adj iNode) {
+	var left, right iNode
 	parent := node.parent
 
-	// 在父节点中查找lnode.keys[0]
-	pos := parent.findKeyPosition(node.keys[0])
-	switch pos {
-	case len(parent.keys):
-		// parent的key都小于node.keys[0]，该节点的位置为pos-1
-		// 相邻节点为parent.childrens[pos-2]
-		adj = parent.childrens[pos-2]
-
-	case 0:
+	pos, bFound := parent.findKeyPosition(t.comparator, node.keys[0])
+	if pos == 0 {
 		// 第一个子节点的相邻节点为parent.childrens[1]
-		adj = parent.childrens[1]
-
-	default:
-		var left, right iNode
-		if parent.keys[pos] == node.keys[0] {
-			if pos == len(parent.keys)-1 {
-				// 最后一个节点
-				adj = parent.childrens[pos-1]
-				return adj
-			}
-
-			left = parent.childrens[pos-1]
-			right = parent.childrens[pos+1]
-		} else {
-			if pos == 1 {
-				// 第一个节点
-				adj = parent.childrens[1]
-				return adj
-			}
-
-			left = parent.childrens[pos-2]
-			right = parent.childrens[pos]
-		}
-
-		if left.getKeys() > t.minKeyN {
-			adj = left
-		} else {
-			adj = right
-		}
+		return parent.childrens[1]
 	}
 
-	return adj
+	if bFound {
+		if pos == len(parent.keys)-1 {
+			// 当前节点是最后一个节点
+			return parent.childrens[pos-1]
+		}
+
+		left = parent.childrens[pos-1]
+		right = parent.childrens[pos+1]
+	} else {
+		if pos == 1 {
+			// 当前节点是第一个节点
+			return parent.childrens[1]
+		}
+
+		if pos == len(parent.keys) {
+			// parent的key都小于node.keys[0]
+			// 当前节点的位置为pos-1
+			// 相邻节点为parent.childrens[pos-2]
+			return parent.childrens[pos-2]
+		}
+
+		left = parent.childrens[pos-2]
+		right = parent.childrens[pos]
+	}
+
+	if left.getKeys() > t.minKeys {
+		return left
+	}
+
+	return right
 }
 
-// moveKey 移动相邻节点的key到leaf中
-func (node *TreeNode) moveKey(adj iNode) *TreeNode {
+// moveKey 移动相邻节点的key到node中
+func (node *TreeNode) moveKey(t *Tree, adj iNode) *TreeNode {
 	adjNode := adj.(*TreeNode)
 	parent := node.parent
 
-	if node.keys[0] < adjNode.keys[0] {
-		// 在相邻节点的左侧，找到相邻节点在父节点的位置
-		pos := parent.findKeyPosition(adjNode.keys[0])
-
-		// 将相邻节点的key和子节点移到当前节点
-		node.keys = append(node.keys, adjNode.keys[0])
-		node.childrens = append(node.childrens, adjNode.childrens[0])
-
-		// 修改相邻节点的子节点的父节点
-		adjNode.childrens[0].setParent(node)
-
-		// 删除相邻节点的key和子节点
-		adjNode.keys = adjNode.keys[1:]
-		adjNode.childrens = adjNode.childrens[1:]
-
-		// 修改父节点的key
-		parent.keys[pos] = adjNode.keys[0]
+	if t.comparator.Compare(node.keys[0], adjNode.keys[0]) == utils.Lt {
+		node.moveCaseRightAdjacentNode(t, adjNode, parent)
 	} else {
-		// 在相邻节点的右侧，找到当前节点在父节点的位置
-		pos := parent.findKeyPosition(node.keys[0])
-		if pos == len(parent.keys) || parent.keys[pos] > node.keys[0] {
-			// 删除的是子节点的最小值，导致删除后在父节点中找不到这个key
-			pos--
-		}
-
-		// 将相邻节点的key和子节点移到当前节点
-		lastKeyIdx := len(adjNode.keys) - 1
-		keys := make([]Key, len(node.keys)+1)
-		keys[0] = adjNode.keys[lastKeyIdx]
-		copy(keys[1:], node.keys)
-		node.keys = keys
-
-		lastChildrenIdx := len(adjNode.childrens) - 1
-		childrens := make([]iNode, len(node.childrens)+1)
-		childrens[0] = adjNode.childrens[lastChildrenIdx]
-		copy(childrens[1:], node.childrens)
-		node.childrens = childrens
-
-		// 修改当前节点的第一个子节点的父节点
-		node.childrens[0].setParent(node)
-
-		// 删除相邻节点的key和子节点
-		adjNode.keys = adjNode.keys[:lastKeyIdx]
-		adjNode.childrens = adjNode.childrens[:lastChildrenIdx]
-
-		// 修改父节点的key
-		parent.keys[pos] = node.keys[0]
+		node.moveCaseLeftAdjacentNode(t, adjNode, parent)
 	}
 
 	return parent
 }
 
-// merge 合并相邻节点
-func (node *TreeNode) merge(adj iNode) iNode {
-	var findKey Key
+// moveCaseRightAdjacentNode 相邻节点在右侧
+func (node *TreeNode) moveCaseRightAdjacentNode(t *Tree, adj *TreeNode, parent *TreeNode) {
+	// 找到相邻节点在父节点的位置
+	pos, _ := parent.findKeyPosition(t.comparator, adj.keys[0])
 
-	pos := 0
+	// 修改相邻节点的子节点的父节点
+	adj.childrens[0].setParent(node)
+
+	// 将相邻节点的第一个key和子节点移到当前节点
+	node.keys = append(node.keys, adj.keys[0])
+	node.childrens = append(node.childrens, adj.childrens[0])
+
+	// 删除相邻节点的key和子节点
+	adj.keys = adj.keys[1:]
+	adj.childrens = adj.childrens[1:]
+
+	// 修改父节点的key
+	parent.keys[pos] = adj.keys[0]
+}
+
+// moveCaseLeftAdjacentNode 相邻节点在左侧
+func (node *TreeNode) moveCaseLeftAdjacentNode(t *Tree, adj *TreeNode, parent *TreeNode) {
+	// 找到当前节点在父节点的位置
+	pos, bFound := parent.findKeyPosition(t.comparator, node.keys[0])
+	if bFound {
+		// 删除的是子节点的最小值，导致删除后在父节点中找不到这个key
+		pos--
+	}
+
+	// 将相邻节点的最后一个key插入到当前节点
+	node.insertKey(adj.keys[len(adj.keys)-1], 0)
+	// 将相邻节点的最后一个子节点插入到当前节点
+	node.insertChildren(adj.childrens[len(adj.childrens)-1], 0)
+	// 修改当前节点的第一个子节点的父节点
+	node.childrens[0].setParent(node)
+
+	// 删除相邻节点的key和子节点
+	adj.keys = adj.keys[:len(adj.keys)-1]
+	adj.childrens = adj.childrens[:len(adj.childrens)-1]
+
+	// 修改父节点的key
+	parent.keys[pos] = node.keys[0]
+}
+
+// merge 合并相邻节点
+func (node *TreeNode) merge(t *Tree, adj iNode) iNode {
+	var key interface{}
 	adjNode := adj.(*TreeNode)
 	parent := node.parent
 
-	if node.keys[0] < adjNode.keys[0] {
-		// 在相邻节点的左侧，找到相邻节点在父节点的位置
-		findKey = adjNode.keys[0]
-		pos = parent.findKeyPosition(findKey)
-
-		// 将相邻节点的key和子节点加到当前节点中
-		node.keys = append(node.keys, adjNode.keys...)
-		node.childrens = append(node.childrens, adjNode.childrens...)
-
-		// 修改相邻节点的子节点的父节点
-		for i := range adjNode.childrens {
-			adjNode.childrens[i].setParent(node)
-		}
+	if t.comparator.Compare(node.keys[0], adjNode.keys[0]) == utils.Lt {
+		key = adjNode.keys[0]
+		// 将相邻节点的keys和childrens加到当前节点中
+		appendNode(node, adjNode)
 	} else {
-		// 在相邻节点的右侧，找到当前节点在父节点的位置
-		findKey = node.keys[0]
-		pos = parent.findKeyPosition(findKey)
-
-		// 将当前节点的key和子节点加入到相邻节点中
-		adjNode.keys = append(adjNode.keys, node.keys...)
-		adjNode.childrens = append(adjNode.childrens, node.childrens...)
-
-		// 修改当前节点的子节点的父节点
-		for i := range node.childrens {
-			node.childrens[i].setParent(adjNode)
-		}
+		key = node.keys[0]
+		// 将当前节点的keys和childrens加入到相邻节点中
+		appendNode(adjNode, node)
 	}
 
-	if pos == len(parent.keys) || parent.keys[pos] > findKey {
+	pos, bFound := parent.findKeyPosition(t.comparator, key)
+	if !bFound {
 		// 删除的是子节点的最小值，导致删除后在父节点中找不到这个key
 		pos--
 	}
@@ -248,6 +202,10 @@ func (node *TreeNode) getParent() *TreeNode {
 // 在节点中查找第一个大于等于key的位置
 // 没有比key大的，则返回node.keys的长度
 func (node *TreeNode) findKeyPosition(comparator utils.Comparator, key interface{}) (pos int, bFound bool) {
+	if len(node.keys) == 0 {
+		return 0, false
+	}
+
 	i, j := 0, len(node.keys)
 
 	for i < j {
@@ -257,6 +215,10 @@ func (node *TreeNode) findKeyPosition(comparator utils.Comparator, key interface
 		} else {
 			j = h
 		}
+	}
+
+	if i == len(node.keys) {
+		return i, false
 	}
 
 	if comparator.Compare(node.keys[i], key) == utils.Et {
@@ -286,31 +248,38 @@ func (node *TreeNode) isFull(max int) bool {
 	return len(node.keys) == max
 }
 
+// free free
+func (node *TreeNode) free() {
+	node.parent = nil
+	node.keys = nil
+	node.childrens = nil
+}
+
 // verif 验证
-func (node *TreeNode) verif(t *Tree) bool {
+func (node *TreeNode) verify(t *Tree) bool {
 	if node.parent != nil {
 		// 非根节点至少有t个关键字
-		if len(node.keys) < t.minKeyN {
-			fmt.Printf("非根节点少于%v个关键字\n", t.minKeyN)
+		if len(node.keys) < t.minKeys {
+			fmt.Printf("非根节点少于%v个关键字\n", t.minKeys)
 			return false
 		}
 
 		// 至少有t个子节点
-		if len(node.childrens) < t.minKeyN {
-			fmt.Printf("非根节点少于%v个子节点\n", t.minKeyN)
+		if len(node.childrens) < t.minKeys {
+			fmt.Printf("非根节点少于%v个子节点\n", t.minKeys)
 			return false
 		}
 	}
 
 	// 最多有2t个关键字
-	if len(node.keys) > t.maxKeyN {
-		fmt.Printf("节点多于%v个关键字\n", t.maxKeyN)
+	if len(node.keys) > t.maxKeys {
+		fmt.Printf("节点多于%v个关键字\n", t.maxKeys)
 		return false
 	}
 
 	// 最多有2t个子节点
-	if len(node.childrens) > t.maxKeyN {
-		fmt.Printf("节点多于%v个子节点\n", t.maxKeyN)
+	if len(node.childrens) > t.maxKeys {
+		fmt.Printf("节点多于%v个子节点\n", t.maxKeys)
 		return false
 	}
 
@@ -318,13 +287,13 @@ func (node *TreeNode) verif(t *Tree) bool {
 	for i, v := range node.childrens {
 		if v.isLeaf() {
 			l := v.(*TreeLeaf)
-			if l.entries[0].Key != node.keys[i] {
-				fmt.Printf("l.entries[0].Key != node.keys[i], l.entries[0].Key %v, node.keys[i] %v\n", l.entries[0].Key, node.keys[i])
+			if t.comparator.Compare(l.entries[0].GetKey(), node.keys[i]) != utils.Et {
+				fmt.Printf("l.entries[0].Key != node.keys[i], l.entries[0].Key %v, node.keys[i] %v\n", l.entries[0].GetKey(), node.keys[i])
 				return false
 			}
 		} else {
 			n := v.(*TreeNode)
-			if n.keys[0] != node.keys[i] {
+			if t.comparator.Compare(n.keys[0], node.keys[i]) != utils.Et {
 				fmt.Printf("n.keys[0] != node.keys[i], n.keys[0] %v, node.keys[i] %v\n", n.keys[0], node.keys[i])
 				return false
 			}
@@ -335,16 +304,26 @@ func (node *TreeNode) verif(t *Tree) bool {
 }
 
 // print print
-func (node *TreeNode) print() {
+func (node *TreeNode) print() string {
 	if node.parent != nil {
-		fmt.Printf("内节点key: %v, \t此节点为父节点key[%v]的子节点, \t父节点为[%v]\n", node.keys, node.keys[0], node.parent)
-	} else {
-		fmt.Printf("内节点key: %v, \t此节点为根节点\n", node.keys)
+		return fmt.Sprintf("内节点key: %v, \t此节点为父节点key[%v]的子节点, \t父节点为[%v]\n", node.printKeys(), node.keys[0], node.parent.printKeys())
 	}
+
+	return fmt.Sprintf("内节点key: %v, \t此节点为根节点\n", node.printKeys())
+}
+
+// String String
+func (node *TreeNode) printKeys() string {
+	keys := make([]string, 0, len(node.keys))
+	for _, key := range node.keys {
+		keys = append(keys, fmt.Sprintf("%v", key))
+	}
+
+	return strings.Join(keys, ",")
 }
 
 // dot dot
-func (node *TreeNode) dot(nName string, pName string) (dNode *dot.Node, dEdge *dot.Edge) {
+func (node *TreeNode) dot(t *Tree, nName string, pName string) (dNode *dot.Node, dEdge *dot.Edge) {
 	// 添加一个node
 	attrValues := make([]string, 0, len(node.keys))
 
@@ -362,7 +341,7 @@ func (node *TreeNode) dot(nName string, pName string) (dNode *dot.Node, dEdge *d
 
 	// 添加一个edge
 	if node.parent != nil {
-		pos := node.parent.findKeyPosition(node.keys[0])
+		pos, _ := node.parent.findKeyPosition(t.comparator, node.keys[0])
 		dEdge = &dot.Edge{}
 		dEdge.Src = pName
 		dEdge.SrcPort = ":f" + fmt.Sprintf("%d", pos)
@@ -375,7 +354,7 @@ func (node *TreeNode) dot(nName string, pName string) (dNode *dot.Node, dEdge *d
 // getChildrenAndUpdateFirstKeyIfNeed
 // 如果pos等于0，则更新第一个key，返回pos位置的子节点
 // 如果pos大于0，则返回pos-1位置的子节点
-func (node *TreeNode) getChildrenAndUpdateFirstKeyIfNeed(pos int) iNode {
+func (node *TreeNode) getChildrenAndUpdateFirstKeyIfNeed(pos int, key interface{}) iNode {
 	if pos == 0 {
 		// 比第一个关键字还小
 		// 替换node.keys[0]
@@ -387,23 +366,37 @@ func (node *TreeNode) getChildrenAndUpdateFirstKeyIfNeed(pos int) iNode {
 }
 
 // updateChildrensParent 更新的node的childrens的父节点
-func (node *TreeNode) updateChildrensParent() {
+func (node *TreeNode) updateChildrensParent(parent *TreeNode) {
 	for i := range node.childrens {
-		node.childrens[i].setParent(node)
+		node.childrens[i].setParent(parent)
 	}
 }
 
-// updateKeys 更新node.keys
-func (node *TreeNode) updateKeys() {
-	parentKeysLen := len(parent.keys)
-	newKeys := make([]Key, parentKeysLen+1)
-	copy(newKeys, parent.keys[:pos])
-	newKeys[pos] = midKey
-	copy(newKeys[pos+1:], parent.keys[pos:])
-	parent.keys = newKeys
+// insertKey 在pos位置插入key
+func (node *TreeNode) insertKey(key interface{}, pos int) {
+	keysLen := len(node.keys)
+	newKeys := make([]interface{}, keysLen+1)
+	copy(newKeys, node.keys[:pos])
+	newKeys[pos] = key
+	copy(newKeys[pos+1:], node.keys[pos:])
+	node.keys = newKeys
 }
 
-// updateChildrens 更新node.childrens
-func (node *TreeNode) updateChildrens() {
+// insertChildren 在pos位置插入children
+func (node *TreeNode) insertChildren(children iNode, pos int) {
+	csLen := len(node.childrens)
+	newCs := make([]iNode, csLen+1)
+	copy(newCs, node.childrens[:pos])
+	newCs[pos] = children
+	copy(newCs[pos+1:], node.childrens[pos:])
+	node.childrens = newCs
+}
 
+// appendNode src的keys和childrens追加到dst中
+func appendNode(dst, src *TreeNode) {
+	dst.keys = append(dst.keys, src.keys...)
+	dst.childrens = append(dst.childrens, src.childrens...)
+
+	src.updateChildrensParent(dst)
+	src.free()
 }

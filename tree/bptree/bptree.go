@@ -1,6 +1,7 @@
 package bptree
 
 import (
+	"bytes"
 	"container/list"
 	"fmt"
 	"os/exec"
@@ -22,20 +23,20 @@ type iNode interface {
 	// moveKey 移动当前节点的key到相邻节点中或者将相邻节点的key移到当前节点中
 	//
 	// @param
-	// 相邻节点
+	// adj: 相邻节点
 	//
 	// @return
 	// 当前节点的父节点
-	moveKey(iNode) *TreeNode
+	moveKey(t *Tree, adj iNode) *TreeNode
 
 	// merge 将相邻节点和当前节点合并
 	//
 	// @param
-	// 相邻节点
+	// adj: 相邻节点
 	//
 	// @return
 	// 当前节点的父节点
-	merge(iNode) iNode
+	merge(t *Tree, adj iNode) iNode
 
 	// setParent 设置父节点
 	//
@@ -64,18 +65,18 @@ type iNode interface {
 	// isFull 节点是否是满节点
 	isFull(int) bool
 
-	// verif 验证节点
-	verif(*Tree) bool
+	// verify 验证节点
+	verify(*Tree) bool
 
 	// print 打印节点
-	print()
+	print() string
 
 	// dot 生成dot
 	//
 	// @param
 	// dotName: 当前节点dot name
 	// pDotName: 父节点dot name
-	dot(dotName string, pDotName string) (*dot.Node, *dot.Edge)
+	dot(t *Tree, dotName string, pDotName string) (*dot.Node, *dot.Edge)
 }
 
 // Tree Tree
@@ -118,7 +119,7 @@ func (t *Tree) Insert(key, val interface{}) {
 		}
 
 		node := iNode.(*TreeNode)
-		node.updateFirstKeyAndGetChild(keyPos)
+		iNode = node.getChildrenAndUpdateFirstKeyIfNeed(keyPos, key)
 	}
 
 	// 插入到叶子节点
@@ -203,12 +204,12 @@ func (t *Tree) deleteFixUp(node iNode, key interface{}) {
 		adj := node.adjacent(t)
 		if adj.getKeys() > t.minKeys {
 			// 相邻节点的key的数量大于t
-			parent := node.moveKey(adj)
+			parent := node.moveKey(t, adj)
 			t.replaceKey(parent, key)
 			return
 		}
 
-		node = node.merge(adj)
+		node = node.merge(t, adj)
 		pos, bFound := node.findKeyPosition(t.comparator, key)
 		if bFound {
 			// node节点中包含delKey
@@ -230,45 +231,32 @@ func (t *Tree) Search(key interface{}) *utils.Entry {
 	return leaf.entries[pos]
 }
 
-// // SearchRange 查找[min, max]之间的数false
-// func (t *Tree) SearchRange(min, max interface{}) []*utils.Entry {
-// 	iNode, pos, bFound := t.lookup(t.root, min)
-// 	if !bFound {
-// 		if !iNode.isLeaf() {
-// 			// 取pos位置的子节点
-// 			iNode = t.getPosChildren(iNode, pos)
-// 			pos = 0
-// 		}
+// SearchRange 查找[min, max]之间的数false
+func (t *Tree) SearchRange(min, max interface{}) []*utils.Entry {
+	iNode, pos, _ := t.lookup(t.root, min)
+	if !iNode.isLeaf() {
+		// 取pos位置的子节点
+		iNode = t.getPosChildren(iNode, pos)
+		pos = 0
+	}
 
-// 		for !iNode.isLeaf() {
-// 			iNode = t.getPosChildren(iNode, pos)
-// 		}
-// 	}
+	for !iNode.isLeaf() {
+		iNode = t.getPosChildren(iNode, 0)
+	}
 
-// 	leaf := iNode.(*TreeLeaf)
-// 	entries := []*Entry{}
+	leaf := iNode.(*TreeLeaf)
+	entries := []*utils.Entry{}
+	iter := NewIteratorWithLeaf(t, leaf, pos)
+	for iter.Next() {
+		if t.comparator.Compare(iter.entry.GetKey(), max) == utils.Gt {
+			break
+		}
 
-// 	for _, v := range leaf.entries[pos:] {
-// 		if v.Key > max {
-// 			return entries
-// 		}
+		entries = append(entries, iter.entry)
+	}
 
-// 		entries = append(entries, v)
-// 	}
-
-// 	for leaf.next != nil {
-// 		leaf = leaf.next
-// 		for _, v := range leaf.entries {
-// 			if v.Key > max {
-// 				return entries
-// 			}
-
-// 			entries = append(entries, v)
-// 		}
-// 	}
-
-// 	return entries
-// }
+	return entries
+}
 
 // dCaseRoot 删除修复 - 修复节点为根节点
 func (t *Tree) dCaseRoot(node iNode) {
@@ -347,7 +335,7 @@ func (t *Tree) lookup(sNode iNode, key interface{}) (node iNode, pos int, bFound
 func (t *Tree) minimum() *TreeLeaf {
 	iNode := t.root
 	for !iNode.isLeaf() {
-		t.getPosChildren(iNode, 0)
+		iNode = t.getPosChildren(iNode, 0)
 	}
 
 	leaf := iNode.(*TreeLeaf)
@@ -358,7 +346,7 @@ func (t *Tree) minimum() *TreeLeaf {
 func (t *Tree) maximum() *TreeLeaf {
 	iNode := t.root
 	for !iNode.isLeaf() {
-		t.getPosChildren(iNode, iNode.getKeys()-1)
+		iNode = t.getPosChildren(iNode, iNode.getKeys()-1)
 	}
 
 	leaf := iNode.(*TreeLeaf)
@@ -380,17 +368,17 @@ func (t *Tree) splitRootNode(inode iNode, key interface{}) *TreeNode {
 	return parent
 }
 
-// VerifBpTree VerifBpTree
-func (t *Tree) VerifBpTree() bool {
-	stack := list.New()
-	stack.PushBack(t.root)
+// Verify Verify
+func (t *Tree) Verify() bool {
+	queue := list.New()
+	queue.PushBack(t.root)
 
-	for stack.Len() != 0 {
-		e := stack.Remove(stack.Back())
+	for queue.Len() != 0 {
+		e := queue.Remove(queue.Front())
 		iNode := e.(iNode)
 
 		// 验证
-		if !iNode.verif(t) {
+		if !iNode.verify(t) {
 			return false
 		}
 
@@ -398,7 +386,7 @@ func (t *Tree) VerifBpTree() bool {
 		if !iNode.isLeaf() {
 			node := iNode.(*TreeNode)
 			for _, v := range node.childrens {
-				stack.PushBack(v)
+				queue.PushBack(v)
 			}
 		}
 	}
@@ -406,26 +394,29 @@ func (t *Tree) VerifBpTree() bool {
 	return true
 }
 
-// PrintBpTree PrintBpTree
-func (t *Tree) PrintBpTree() {
-	stack := list.New()
-	stack.PushBack(t.root)
+// String String
+func (t *Tree) String() string {
+	buffer := bytes.Buffer{}
+	queue := list.New()
+	queue.PushBack(t.root)
 
-	for stack.Len() != 0 {
-		e := stack.Remove(stack.Back())
+	for queue.Len() != 0 {
+		e := queue.Remove(queue.Front())
 		iNode := e.(iNode)
 
 		// 打印节点
-		iNode.print()
+		buffer.WriteString(iNode.print())
 
 		// 将根节点和内节点的所有子节点加入到stack
 		if !iNode.isLeaf() {
 			node := iNode.(*TreeNode)
 			for _, v := range node.childrens {
-				stack.PushBack(v)
+				queue.PushBack(v)
 			}
 		}
 	}
+
+	return buffer.String()
 }
 
 type dotNode struct {
@@ -452,7 +443,7 @@ func (t *Tree) Dot() error {
 		e := stack.Remove(stack.Back())
 		d := e.(*dotNode)
 
-		dNode, dEdge := d.node.dot(d.nDotName, d.pDotName)
+		dNode, dEdge := d.node.dot(t, d.nDotName, d.pDotName)
 		dGraph.AddNode(dNode)
 		if dEdge != nil {
 			dGraph.AddEdge(dEdge)
