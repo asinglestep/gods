@@ -133,7 +133,7 @@ func (t *Tree) deleteFixUp(node *TreeNode, key interface{}) {
 		}
 
 		// 节点和相邻节点都只有t-1个关键字
-		key = t.mergeNode(parent, node, adjNode, pos, bBig).GetKey()
+		key = t.merge(parent, node, adjNode, pos, bBig).GetKey()
 		node = parent
 	}
 }
@@ -278,7 +278,7 @@ func (t *Tree) moveCaseLeftAdjacentNode(parent *TreeNode, node *TreeNode, adjNod
 	}
 }
 
-// mergeNode 将父节点和node、adjNode相关的entry、node 和 adjNode 进行合并
+// merge 将父节点和node、adjNode相关的entry、node 和 adjNode 进行合并
 //
 // @param
 // parent: 父节点
@@ -289,16 +289,16 @@ func (t *Tree) moveCaseLeftAdjacentNode(parent *TreeNode, node *TreeNode, adjNod
 //
 // @return
 // pEntry: 父节点中和node、adjNode相关联的entry
-func (t *Tree) mergeNode(parent *TreeNode, node *TreeNode, adjNode *TreeNode, pos int, bBig bool) (pEntry *utils.Entry) {
+func (t *Tree) merge(parent *TreeNode, node *TreeNode, adjNode *TreeNode, pos int, bBig bool) (pEntry *utils.Entry) {
 	if bBig {
 		pEntry = parent.entries[pos]
 		// 相邻节点合并到node中
-		t.meregNode(node, adjNode, pEntry)
+		t.mergeNode(node, adjNode, pEntry)
 	} else {
 		pos-- // 相邻节点在左侧，pos-1 为 父节点和node、adjNode相关的entry 所在的位置
 		pEntry = parent.entries[pos]
 		// node合并到相邻节点中
-		t.meregNode(adjNode, node, pEntry)
+		t.mergeNode(adjNode, node, pEntry)
 	}
 
 	// 删除父节点key
@@ -308,8 +308,8 @@ func (t *Tree) mergeNode(parent *TreeNode, node *TreeNode, adjNode *TreeNode, po
 	return pEntry
 }
 
-// meregNode src、entry合并到dst中
-func (t *Tree) meregNode(dst *TreeNode, src *TreeNode, entry *utils.Entry) {
+// mergeNode src、entry合并到dst中
+func (t *Tree) mergeNode(dst *TreeNode, src *TreeNode, entry *utils.Entry) {
 	dst.entries = append(dst.entries, entry)
 	dst.entries = append(dst.entries, src.entries...)
 
