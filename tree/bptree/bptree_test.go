@@ -26,8 +26,10 @@ func (tc bptreeComparator) Compare(k1, k2 interface{}) int {
 	return 0
 }
 
+const DEGREE = 10
+
 func Test_BpTreeInsert(t *testing.T) {
-	tree := NewTree(2, bptreeComparator{})
+	tree := NewTree(DEGREE, bptreeComparator{})
 
 	fmt.Println("插入10")
 	tree.Insert(10, 10)
@@ -112,7 +114,7 @@ func Test_BpTreeInsert(t *testing.T) {
 }
 
 func Test_BpTreeRandInsert(t *testing.T) {
-	tree := NewTree(2, bptreeComparator{})
+	tree := NewTree(DEGREE, bptreeComparator{})
 	var num = 1000000
 
 	array := rand.New(rand.NewSource(time.Now().UnixNano())).Perm(num)
@@ -140,7 +142,7 @@ func Test_BpTreeRandInsert(t *testing.T) {
 }
 
 func Test_BpTreeDelete(t *testing.T) {
-	tree := NewTree(2, bptreeComparator{})
+	tree := NewTree(DEGREE, bptreeComparator{})
 
 	tree.Insert(10, 10)
 	tree.Insert(20, 20)
@@ -234,7 +236,7 @@ func Test_BpTreeDelete(t *testing.T) {
 }
 
 func Test_BpTreeRandDelete(t *testing.T) {
-	tree := NewTree(2, bptreeComparator{})
+	tree := NewTree(DEGREE, bptreeComparator{})
 	var num = 1000000
 
 	iArray := rand.New(rand.NewSource(time.Now().UnixNano())).Perm(num)
@@ -267,7 +269,7 @@ func Test_BpTreeRandDelete(t *testing.T) {
 }
 
 func Test_BpTreeRandSearch(t *testing.T) {
-	tree := NewTree(2, bptreeComparator{})
+	tree := NewTree(DEGREE, bptreeComparator{})
 	var num = 1000000
 
 	iArray := rand.New(rand.NewSource(time.Now().UnixNano())).Perm(num)
@@ -293,7 +295,7 @@ func Test_BpTreeRandSearch(t *testing.T) {
 }
 
 func Test_BpTreeRandSearchRange(t *testing.T) {
-	tree := NewTree(2, bptreeComparator{})
+	tree := NewTree(DEGREE, bptreeComparator{})
 	var num = 1000000
 
 	iArray := rand.New(rand.NewSource(time.Now().UnixNano())).Perm(num)

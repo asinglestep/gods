@@ -157,12 +157,12 @@ func (leaf *TreeLeaf) merge(t *Tree, adj iNode) iNode {
 	if t.comparator.Compare(leaf.entries[0].GetKey(), adjNode.entries[0].GetKey()) == utils.Lt {
 		key = adjNode.entries[0].GetKey()
 		// 将相邻节点合并到当前节点
-		appendLeaf(leaf, adjNode)
+		leaf.mergeFrom(adjNode)
 	} else {
 		// 在相邻节点的右侧，找到当前节点在父节点中的位置
 		key = leaf.entries[0].GetKey()
 		// 将当前节点合并到相邻节点
-		appendLeaf(adjNode, leaf)
+		adjNode.mergeFrom(leaf)
 	}
 
 	pos, bFound := parent.findKeyPosition(t.comparator, key)
@@ -322,12 +322,12 @@ func (leaf *TreeLeaf) insertEntry(entry *utils.Entry, pos int) {
 	leaf.entries = newEntries
 }
 
-// appendLeaf src的entries追加到dst中
-func appendLeaf(dst, src *TreeLeaf) {
-	dst.entries = append(dst.entries, src.entries...)
-	dst.next = src.next
+// mergeLeaf src的entries 合并到 leaf 中
+func (leaf *TreeLeaf) mergeFrom(src *TreeLeaf) {
+	leaf.entries = append(leaf.entries, src.entries...)
+	leaf.next = src.next
 	if src.next != nil {
-		src.next.prev = dst
+		src.next.prev = leaf
 	}
 
 	src.free()

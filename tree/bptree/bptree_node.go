@@ -168,12 +168,10 @@ func (node *TreeNode) merge(t *Tree, adj iNode) iNode {
 
 	if t.comparator.Compare(node.keys[0], adjNode.keys[0]) == utils.Lt {
 		key = adjNode.keys[0]
-		// 将相邻节点的keys和childrens加到当前节点中
-		appendNode(node, adjNode)
+		node.mergeFrom(adjNode)
 	} else {
 		key = node.keys[0]
-		// 将当前节点的keys和childrens加入到相邻节点中
-		appendNode(adjNode, node)
+		adjNode.mergeFrom(node)
 	}
 
 	pos, bFound := parent.findKeyPosition(t.comparator, key)
@@ -392,11 +390,11 @@ func (node *TreeNode) insertChildren(children iNode, pos int) {
 	node.childrens = newCs
 }
 
-// appendNode src的keys和childrens追加到dst中
-func appendNode(dst, src *TreeNode) {
-	dst.keys = append(dst.keys, src.keys...)
-	dst.childrens = append(dst.childrens, src.childrens...)
+// mergeFrom src的keys和childrens 合并到 node 中
+func (node *TreeNode) mergeFrom(src *TreeNode) {
+	node.keys = append(node.keys, src.keys...)
+	node.childrens = append(node.childrens, src.childrens...)
 
-	src.updateChildrensParent(dst)
+	src.updateChildrensParent(node)
 	src.free()
 }

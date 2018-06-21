@@ -1,6 +1,7 @@
 package bptree
 
 import (
+	"fmt"
 	"math/rand"
 	"testing"
 	"time"
@@ -13,9 +14,12 @@ func Benchmark_RandInsert(b *testing.B) {
 	array := rand.New(rand.NewSource(time.Now().UnixNano())).Perm(num)
 	// array = []int{0, 1, 5, 2, 3, 6, 4, 7, 9, 8}
 
+	sTime := time.Now()
 	for _, v := range array {
 		tree.Insert(v, v)
 	}
+
+	fmt.Printf("Bptree Insert %v elements, use %v ms\n", num, time.Now().Sub(sTime).Nanoseconds()/1e6)
 }
 
 func Benchmark_RandDelete(b *testing.B) {
