@@ -12,7 +12,7 @@ const (
 	WORD_SIZE  = 64
 	WORD_SHIFT = 6
 
-	WORK_MASK uint64 = 0xffffffffffffffff
+	WORD_MASK uint64 = 0xffffffffffffffff
 )
 
 // BitSet BitSet
@@ -86,7 +86,7 @@ func (b *BitSet) PrevSetBit(bitIndex uint) int {
 		word = b.words[wordIndex]
 	} else {
 		// 找到bitIndex所在的word，将bitIndex位之后的位置清0
-		word = b.words[wordIndex] & (WORK_MASK >> (WORD_SIZE - 1 - bitIndex&(WORD_SIZE-1)))
+		word = b.words[wordIndex] & (WORD_MASK >> (WORD_SIZE - 1 - bitIndex&(WORD_SIZE-1)))
 	}
 
 	for {
@@ -115,7 +115,7 @@ func (b *BitSet) PrevClearBit(bitIndex uint) int {
 		word = ^b.words[wordIndex]
 	} else {
 		// 找到bitIndex所在的word，取反，将bitIndex位之后的位置清0
-		word = (^b.words[wordIndex]) & (WORK_MASK >> (WORD_SIZE - 1 - bitIndex&(WORD_SIZE-1)))
+		word = (^b.words[wordIndex]) & (WORD_MASK >> (WORD_SIZE - 1 - bitIndex&(WORD_SIZE-1)))
 	}
 
 	for {
@@ -142,7 +142,7 @@ func (b *BitSet) NextSetBit(bitIndex uint) int {
 	}
 
 	// 找到bitIndex所在的word，将bitIndex位之前的位置清0
-	word := b.words[wordIndex] & (WORK_MASK << (bitIndex & (WORD_SIZE - 1)))
+	word := b.words[wordIndex] & (WORD_MASK << (bitIndex & (WORD_SIZE - 1)))
 	for {
 		if word != 0 {
 			// 当前word至少上有一个不为1的位
@@ -167,7 +167,7 @@ func (b *BitSet) NextClearBit(bitIndex uint) int {
 	}
 
 	// 找到bitIndex所在的word，取反，将bitIndex位之前的位置清0
-	word := (^b.words[wordIndex]) & (WORK_MASK << (bitIndex & (WORD_SIZE - 1)))
+	word := (^b.words[wordIndex]) & (WORD_MASK << (bitIndex & (WORD_SIZE - 1)))
 	for {
 		if word != 0 {
 			// 当前word至少上有一个不为1的位
